@@ -1,0 +1,246 @@
+export default {
+  colorMap: {
+    0: "green",
+    1: "purple",
+    2: "yellow",
+    3: "red",
+    4: "cyan",
+    5: "pink",
+    6: "blue",
+  },
+  1: {
+    rtp: 99,
+    multiplierMap: [
+      {
+        primaryGroup: 5,
+        secondaryGroup: 0,
+        multiplier: 50,
+        probability: 0.04,
+      },
+      {
+        primaryGroup: 4,
+        secondaryGroup: 0,
+        multiplier: 5,
+        probability: 1.45,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 2,
+        multiplier: 4,
+        probability: 2.5,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 0,
+        multiplier: 3,
+        probability: 12.47,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 2,
+        multiplier: 2,
+        probability: 18.7,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 0,
+        multiplier: 0.1,
+        probability: 49.88,
+      },
+      {
+        primaryGroup: 0,
+        secondaryGroup: 0,
+        multiplier: 0,
+        probability: 14.97,
+      },
+    ],
+  },
+  2: {
+    rtp: 98,
+    multiplierMap: [
+      {
+        primaryGroup: 5,
+        secondaryGroup: 0,
+        multiplier: 50,
+        probability: 0.04,
+      },
+      {
+        primaryGroup: 4,
+        secondaryGroup: 0,
+        multiplier: 5,
+        probability: 1.2,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 2,
+        multiplier: 4,
+        probability: 2.5,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 0,
+        multiplier: 3,
+        probability: 12.5,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 2,
+        multiplier: 2,
+        probability: 18.75,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 0,
+        multiplier: 0.1,
+        probability: 50.01,
+      },
+      {
+        primaryGroup: 0,
+        secondaryGroup: 0,
+        multiplier: 0,
+        probability: 15.01,
+      },
+    ],
+  },
+  3: {
+    rtp: 97,
+    multiplierMap: [
+      {
+        primaryGroup: 5,
+        secondaryGroup: 0,
+        multiplier: 50,
+        probability: 0.06,
+      },
+      {
+        primaryGroup: 4,
+        secondaryGroup: 0,
+        multiplier: 5,
+        probability: 1.2,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 2,
+        multiplier: 4,
+        probability: 2.59,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 0,
+        multiplier: 3,
+        probability: 11.58,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 2,
+        multiplier: 2,
+        probability: 18.26,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 0,
+        multiplier: 0.1,
+        probability: 49.9,
+      },
+      {
+        primaryGroup: 0,
+        secondaryGroup: 0,
+        multiplier: 0,
+        probability: 14.97,
+      },
+    ],
+  },
+  5: {
+    rtp: 95,
+    multiplierMap: [
+      {
+        primaryGroup: 5,
+        secondaryGroup: 0,
+        multiplier: 50,
+        probability: 0.06,
+      },
+      {
+        primaryGroup: 4,
+        secondaryGroup: 0,
+        multiplier: 5,
+        probability: 1.2,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 2,
+        multiplier: 4,
+        probability: 2.59,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 0,
+        multiplier: 3,
+        probability: 11.58,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 2,
+        multiplier: 2,
+        probability: 16.39,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 0,
+        multiplier: 0.1,
+        probability: 49.9,
+      },
+      {
+        primaryGroup: 0,
+        secondaryGroup: 0,
+        multiplier: 0,
+        probability: 14.97,
+      },
+    ],
+  },
+  7: {
+    rtp: 93,
+    multiplierMap: [
+      {
+        primaryGroup: 5,
+        secondaryGroup: 0,
+        multiplier: 50,
+        probability: 0.06,
+      },
+      {
+        primaryGroup: 4,
+        secondaryGroup: 0,
+        multiplier: 5,
+        probability: 1.0,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 2,
+        multiplier: 4,
+        probability: 2.59,
+      },
+      {
+        primaryGroup: 3,
+        secondaryGroup: 0,
+        multiplier: 3,
+        probability: 11.58,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 2,
+        multiplier: 2,
+        probability: 15.47,
+      },
+      {
+        primaryGroup: 2,
+        secondaryGroup: 0,
+        multiplier: 0.1,
+        probability: 49.9,
+      },
+      {
+        primaryGroup: 0,
+        secondaryGroup: 0,
+        multiplier: 0,
+        probability: 15.12,
+      },
+    ],
+  },
+};

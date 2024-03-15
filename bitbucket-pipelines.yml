@@ -1,0 +1,28 @@
+image: node:latest
+
+pipelines:
+  branches:
+    main:
+      - step:
+          name: "NPM Install & NPM Build"
+          caches:
+            - node
+          script:
+            - npm install
+            - npm run build
+          artifacts:
+            - build/**
+      - step:
+          name: Deploy to AWS via rsync
+          script:
+            - apt-get update && apt-get install -y rsync
+            - cd $BITBUCKET_CLONE_DIR
+            - rsync -avz --delete build package*.json $SSH_USER@$SSH_HOST:/home/pixentech/games-be/pixent_provfair_be
+      - step:
+          name: Update node_modules & pm2 restart
+          script:
+            - pipe: atlassian/ssh-run:0.8.0
+              variables:
+                SSH_USER: $SSH_USER
+                SERVER: $SSH_HOST
+                COMMAND: 'cd ~/games-be/pixent_provfair_be && npm i && pm2 restart pixen_provfair_be'

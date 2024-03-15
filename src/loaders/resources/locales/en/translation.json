@@ -1,0 +1,39 @@
+{
+  "general": {
+    "activeSeed": "User seed is active.",
+    "invalidUserSeed": "User seed node found.",
+    "insufficientBalance": "Insufficient Balance",
+    "invalidToken": "Invalid token",
+    "invalidBetId": "Bet transaction not found.",
+    "invalidGamecode": "Please provide correct game code."
+  },
+  "dice": {
+
+  },
+  "mine": {
+    "activeBet": "Please close your active game session",
+    "invalidBet": "Invalid bet session",
+    "fieldSelected": "Field already selected"
+  },
+  "hilo": {
+    "activeBet": "Please close your active game session",
+    "invalidBet": "Invalid bet session",
+    "invalidSkip": "Invalid action by user",
+    "invalidCashout": "Make atleast one prediction to cashout.",
+    "invalidGuess": "Please make valid guess."
+  },
+  "limbo": {
+    "invalidTarget": "Please provide target multiplier between 1.01 to 1000000"
+  },
+  "plinko": {
+    "invalidRow": "Please select valid row number."
+  },
+  "crash": {
+    "hashExhausted": "No unused hash available",
+    "invalidGameId": "Please provide valid gameId",
+    "betNotAllowed": "Bet place not allowed, Please try again in next session.",
+    "invalidCashout": "Cashout not allowed",
+    "betAlreadySettled": "Bet already settled",
+    "gameEnded":"Game session has ended"
+  }
+}
