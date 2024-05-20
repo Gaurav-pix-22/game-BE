@@ -79,9 +79,9 @@ export default async ({ expressApp, httpServer }) => {
 
   Logger.info("✌️ Dependency Injector loaded");
 
-  // crashInit();
-  // slideInit();
-  // aviatorXInit()
+  crashInit();
+  slideInit();
+  aviatorXInit()
   await expressLoader({ app: expressApp });
   Logger.info("✌️ Express loaded");
 };
