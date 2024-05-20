@@ -1,6 +1,9 @@
 import { Joi } from "celebrate";
 import { GameCode, PlinkoLevel, GameMode } from "../config/constant";
 
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 const token = Joi.string().trim().required();
 const gameCode = Joi.string().trim().required().valid(GameCode.PLINKO);
 const gameMode = Joi.string()
@@ -30,7 +33,10 @@ const plinkoBetSchema = Joi.object({
   currency,
   betAmount,
   risk,
-  rows
+  rows,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 

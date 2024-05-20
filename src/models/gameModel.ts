@@ -45,6 +45,21 @@ const game = new mongoose.Schema(
       required: true,
       index: true,
     },
+    platformId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    operatorId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    brandId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     currency: {
       type: String,
       required: true,
@@ -63,14 +78,17 @@ const game = new mongoose.Schema(
       required: true,
     },
     gameId: {
-      type: String,
-      default: "",
+      type: mongoose.Schema.Types.ObjectId,
     },
     betStatus: {
       type: String,
       default: "",
       enum: BetStatus,
       index: true
+    },
+    avtar: {
+      type: String,
+      default: ""
     },
     err: {
       type: String,

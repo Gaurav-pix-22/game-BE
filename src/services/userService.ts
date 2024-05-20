@@ -5,10 +5,11 @@ import CommonService from "./common";
 import { Inject, Service } from "typedi";
 import UserSeeds from "./provablyFair/user";
 import GenerateHashes from "./provablyFair/generateHashes";
-import provablyFair from "./provablyFair/multiplayerOutcomes"
+import provablyFair from "./provablyFair/multiplayerOutcomes";
 import { GameCode } from "../config/constant";
 import gameOutcomes from "./provablyFair/gameOutcomes";
-import multiplayerOutcome from "./provablyFair/multiplayerOutcomes"
+import multiplayerOutcome from "./provablyFair/multiplayerOutcomes";
+import aviatorXProvablyService from "./provablyFair/aviatorXService";
 import {
   addOrUpdateUserInterface,
   getServerSeedInterface,
@@ -26,6 +27,8 @@ export default class UserService extends CommonService {
     @Inject("logger") private logger,
     @Inject("userModel") private userModel: Models.UserModel,
     @Inject("crashHashModel") private crashHashModel: Models.CrashHashModel,
+    @Inject("aviatorXServerModel")
+    private aviatorXServerModel: Models.AviatorXServerModel,
     @Inject("slideHashModel") private slideHashModel: Models.SlideHashModel
   ) {
     super();
@@ -49,11 +52,12 @@ export default class UserService extends CommonService {
 
   //Temporary management service needs to be removed later.
   public async generateHashCodes(initialHash: string, gameCode: GameCode) {
-    // await this.generateHashCodes('test', GameCode.CRASH); 
-    
+    // await this.generateHashCodes('test', GameCode.CRASH);
+
     this.logger.info("===generateHashCodes started ===");
 
     const genarateHashesInstance = Container.get(GenerateHashes);
+    const aviatorXProvablyInstance = Container.get(aviatorXProvablyService);
 
     if (gameCode === GameCode.CRASH) {
       // Remove all existing documents from the collection
@@ -62,45 +66,68 @@ export default class UserService extends CommonService {
     } else if (gameCode === GameCode.SLIDE) {
       await this.slideHashModel.deleteMany({});
       console.log("All documents deleted from the collection");
+    } else if (gameCode === GameCode.AVIATORX) {
+      await this.aviatorXServerModel.deleteMany({});
+      console.log("All documents deleted from the collection");
     }
-      // generate and update the hashes in the chunks of 100,000
-      const chunkSize = 100000;
-      const totalHashes = 1000000; //TODO: change this to 3million
-      let hashesLeft = totalHashes; //temp variable to keep track of number of hashes left to generate
-      let tempHash = initialHash; //temp variable to keep track of the last hash generated
-      while(hashesLeft > 0) {
-        const hashes = await genarateHashesInstance.generateHashes(tempHash, chunkSize);
-        // first create documents for all the hashes
-        const hashesDocuments = hashes.map((hash, index) => {
-          return {
-            hash,
-            isUsed: false,
-            order: totalHashes - hashesLeft + index + 1,
-          };
-        });
-        // reverse the hashes array
-        hashesDocuments.reverse();
-        // insert all the hashes into the database
-        if(gameCode === GameCode.CRASH){
-          await this.crashHashModel.insertMany(hashesDocuments);
-        }
-        else if(gameCode === GameCode.SLIDE){
-          await this.slideHashModel.insertMany(hashesDocuments);
-        }
-        // update the tempHash
-        tempHash = hashes[chunkSize-1];
-        // update the hashesLeft
-        hashesLeft -= chunkSize;
-        console.log(`number of hashes left to generate: ${hashesLeft}`);
-      }
 
-      // insert the initial hash in the database
-      if(gameCode === GameCode.CRASH){
-        await this.crashHashModel.create({hash: initialHash, isUsed: false, order: 0});
+    // generate and update the hashes in the chunks of 100,000
+    const chunkSize = 100000;
+    const totalHashes = 100000; //TODO: change this to 3million
+    let hashesLeft = totalHashes; //temp variable to keep track of number of hashes left to generate
+    let tempHash = initialHash; //temp variable to keep track of the last hash generated
+    while (
+      hashesLeft > 0 &&
+      [GameCode.CRASH, GameCode.SLIDE].includes(gameCode)
+    ) {
+      const hashes = await genarateHashesInstance.generateHashes(
+        tempHash,
+        chunkSize
+      );
+      // first create documents for all the hashes
+      const hashesDocuments = hashes.map((hash, index) => {
+        return {
+          hash,
+          isUsed: false,
+          order: totalHashes - hashesLeft + index + 1,
+        };
+      });
+      // reverse the hashes array
+      hashesDocuments.reverse();
+      // insert all the hashes into the database
+      if (gameCode === GameCode.CRASH) {
+        await this.crashHashModel.insertMany(hashesDocuments);
+      } else if (gameCode === GameCode.SLIDE) {
+        await this.slideHashModel.insertMany(hashesDocuments);
       }
-      else if(gameCode === GameCode.SLIDE){
-        await this.slideHashModel.create({hash: initialHash, isUsed: false, order: 0});
-      }
+      // update the tempHash
+      tempHash = hashes[chunkSize - 1];
+      // update the hashesLeft
+      hashesLeft -= chunkSize;
+      console.log(`number of hashes left to generate: ${hashesLeft}`);
+    }
+
+    // insert the initial hash in the database
+    if (gameCode === GameCode.CRASH) {
+      await this.crashHashModel.create({
+        hash: initialHash,
+        isUsed: false,
+        order: 0,
+      });
+    } else if (gameCode === GameCode.SLIDE) {
+      await this.slideHashModel.create({
+        hash: initialHash,
+        isUsed: false,
+        order: 0,
+      });
+    } else if (gameCode === GameCode.AVIATORX) {
+      await this.aviatorXServerModel.create(
+        aviatorXProvablyInstance.generateSeedsAndHashes(
+          initialHash,
+          totalHashes
+        )
+      );
+    }
     this.logger.info("===generateHashCodes ended===");
   }
 
@@ -126,6 +153,10 @@ export default class UserService extends CommonService {
       hashedNextServerSeed,
       nonce: 0,
       seedHistory: {},
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
+      avtar: data?.avtar,
     };
 
     await this.userModel.create({ ...newUser });
@@ -205,15 +236,19 @@ export default class UserService extends CommonService {
       "===getServerSeed started for hash code %s===",
       data.hashedServerSeed
     );
-    const isActiveSeed = await this.userModel.exists({hashedServerSeed: data.hashedServerSeed})
+    const isActiveSeed = await this.userModel.exists({
+      hashedServerSeed: data.hashedServerSeed,
+    });
 
-    if(isActiveSeed) throw new Error(i18next.t("general.activeSeed"));
-    const key = `seedHistory.${data.hashedServerSeed}`
+    if (isActiveSeed) throw new Error(i18next.t("general.activeSeed"));
+    const key = `seedHistory.${data.hashedServerSeed}`;
 
-    const user = await this.userModel.findOne({
-      [key]: {$exists: true}
-    }).select({seedHistory: 1})
-    
+    const user = await this.userModel
+      .findOne({
+        [key]: { $exists: true },
+      })
+      .select({ seedHistory: 1 });
+
     // check if the serverSeed is not present in the seedHistory, if yes then throw error
     if (!user?.seedHistory[data.hashedServerSeed])
       throw new Error(i18next.t("general.invalidUserSeed"));
@@ -320,38 +355,46 @@ export default class UserService extends CommonService {
           data.nonce,
           GameCode.PLINKO
         );
-        const path = generatedTarget.map((el) => !!Math.trunc(el) ? "R" : "L").slice(0, data.rows);
-        const payInfo = plinkoMath[data.gameMode].gameLevel[data.risk.toLowerCase()].find(el => el.row === data.rows).multiplierMap[path.filter(el => el === "R").length]
+        const path = generatedTarget
+          .map((el) => (!!Math.trunc(el) ? "R" : "L"))
+          .slice(0, data.rows);
+        const payInfo = plinkoMath[data.gameMode].gameLevel[
+          data.risk.toLowerCase()
+        ].find((el) => el.row === data.rows).multiplierMap[
+          path.filter((el) => el === "R").length
+        ];
 
         resp = {
           gameCode: data.gameCode,
           state: {
             path,
             rows: data.rows,
-            risk: data.risk
+            risk: data.risk,
           },
-          multiplier: payInfo.multiplier
-        }
-        break; 
+          multiplier: payInfo.multiplier,
+        };
+        break;
       case GameCode.CRASH:
-        const result = await multiPlayergameOutcomesInstance.generateGameOutcomes(
-          data.hash,
-          data.seed,
-          GameCode.CRASH
-        );
-        
+        const result =
+          await multiPlayergameOutcomesInstance.generateGameOutcomes(
+            data.hash,
+            data.seed,
+            GameCode.CRASH
+          );
+
         resp = {
           gameCode: data.gameCode,
           crashAt: result[data.gameMode],
         };
         break;
       case GameCode.SLIDE:
-        const slideResult = await multiPlayergameOutcomesInstance.generateGameOutcomes(
-          data.hash,
-          data.seed,
-          GameCode.SLIDE
-        );
-        
+        const slideResult =
+          await multiPlayergameOutcomesInstance.generateGameOutcomes(
+            data.hash,
+            data.seed,
+            GameCode.SLIDE
+          );
+
         resp = {
           gameCode: data.gameCode,
           multiplier: slideResult[data.gameMode],

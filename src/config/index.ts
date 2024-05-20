@@ -25,6 +25,13 @@ export default {
   rgsSocketUrl: process.env.RGS_SOCKET_URL,
   secretKey: process.env.SECRET_KEY,
   token: process.env.TOKEN,
+  payloadSecretKey: process.env.PAYLOAD_SECRET_KEY,
+  signature: process.env.SIGNATURE,
+  merchantId: process.env.MERCHANTID,
+  metaData: process.env.META_DATA,
+  base: process.env.BASE,
+  allowedTimeInSec: Number(process.env.ALLOWED_TIME_IN_SEC) || 5,
+
 
 
   /**

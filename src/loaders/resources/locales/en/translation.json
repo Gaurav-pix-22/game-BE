@@ -30,10 +30,13 @@
   },
   "crash": {
     "hashExhausted": "No unused hash available",
+    "seedExhausted": "No unused server seed available",
     "invalidGameId": "Please provide valid gameId",
     "betNotAllowed": "Bet place not allowed, Please try again in next session.",
+    "cancelNotAllowed": "Can't cancel bet when game has started",
     "invalidCashout": "Cashout not allowed",
     "betAlreadySettled": "Bet already settled",
-    "gameEnded":"Game session has ended"
+    "gameEnded":"Game session has ended",
+    "invalidBetId": "Please provide valid bet id"
   }
 }

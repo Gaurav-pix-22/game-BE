@@ -28,7 +28,10 @@ type plinkoUserSession {
     language: String,
     gameCode: String!,
     paytableByLevels: plinkoLevels,
-    gameMode: String
+    gameMode: String,
+    platformId: String,
+    operatorId: String,
+    brandId: String
 }
 
 type plinkoBetSession {

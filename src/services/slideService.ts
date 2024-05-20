@@ -70,6 +70,9 @@ export default class SlideService extends CommonService {
         serverSeed: 1,
         clientSeed: 1,
         hashedServerSeed: 1,
+        platformId: 1,
+        operatorId: 1,
+        brandId: 1,
         nonce: 1,
         userId: 1,
       });
@@ -138,6 +141,9 @@ export default class SlideService extends CommonService {
           gameMode: _player.gameMode,
           slideState: _player.slideState,
           date: _player.date,
+          platformId: _player.platformId,
+          operatorId: _player.operatorId,
+          brandId: _player.brandId
         });
 
         updatedPlayerInfo.push({
@@ -145,7 +151,7 @@ export default class SlideService extends CommonService {
           betStatus: BetStatus.creditSuccess,
         });
 
-        this.socket.emit(`${_player.gameMode}/${SocketEvents.cashedout}`, {
+        this.socket.to(`${_player.brandId}/${_player.gameMode}`).emit(`${SocketEvents.cashedout}`, {
           userId: _player.userId,
           betId: _player.betId,
           payout: _player.payout,
@@ -164,10 +170,27 @@ export default class SlideService extends CommonService {
       }
     }
 
-    this.socket.to(GameCode.SLIDE).emit(
-      `${GameCode.SLIDE}/${SocketEvents.playersBetStatus}`,
-      ldb
-    );
+    //Emit player bet status brand and rtp wise
+    for(let k=0; k<Object.keys(ldb).length; k++) {
+      let _gameMode = Object.keys(ldb)[k];
+      let _players = ldb[_gameMode];
+
+      let _grpByBrand = _players.reduce((map, curr) => {
+        if(map[curr?.brandId]) map[curr?.brandId] = [...map[curr?.brandId], {...curr}]
+        else map[curr?.brandId] = [{...curr}]
+
+        return map
+      }, {})
+
+      for(let l=0;l<Object.keys(_grpByBrand).length; l++){
+        let _brand = Object.keys(_grpByBrand)[l];
+
+        this.socket.to(`${_brand}/${_gameMode}/${GameCode.SLIDE}`).emit(
+          `${GameCode.SLIDE}/${SocketEvents.playersBetStatus}`,
+          _grpByBrand[_brand]
+        );
+      }
+    }
 
     //update game DB and user game info in bulk
     await this.gameModel.bulkWrite(
@@ -182,6 +205,9 @@ export default class SlideService extends CommonService {
                 userId: curr.userId,
                 gameMode: curr.gameMode,
                 gameCode: GameCode.SLIDE,
+                platformId: curr.platformId,
+                operatorId: curr.operatorId,
+                brandId: curr.brandId
               },
               update: {
                 $set: {
@@ -230,8 +256,15 @@ export default class SlideService extends CommonService {
       this.cache.set(`${GameCode.SLIDE}/seeds`, seedInfo);
     }
 
-    if (!hashInfo[0] && !hashInfo[0]?.hash)
+    if (!hashInfo[0] && !hashInfo[0]?.hash){ 
+      this.socket
+      .to(GameCode.SLIDE)
+      .emit(`${GameCode.SLIDE}/${MultiPlayerGameStates.underMaintenance}`, {
+        message: "Game under maintainence"
+      });
+
       throw new Error(i18next.t("crash.hashExhausted"));
+    }
 
     const gameOutcomesInstance = Container.get(multiplayerOutcome);
     const result = await gameOutcomesInstance.generateGameOutcomes(
@@ -371,6 +404,9 @@ export default class SlideService extends CommonService {
       state: 1,
       betStatus: 1,
       date: 1,
+      platformId: 1,
+      operatorId: 1,
+      brandId: 1
     }).lean()
 
     for (const info of playerJoined) {
@@ -405,8 +441,8 @@ export default class SlideService extends CommonService {
     );
     this.cache.set(`${GameCode.SLIDE}/${wsGameResp.id}`, wsGameResp);
     for (const _value of _gameModes) {
-      this.socket.to(GameCode.SLIDE).emit(
-        `${GameCode.SLIDE}/${_value}/${MultiPlayerGameStates.result}`,
+      this.socket.to(`${_value}/${GameCode.SLIDE}`).emit(
+        `${GameCode.SLIDE}/${MultiPlayerGameStates.result}`,
         {
           gameId: wsGameResp.id,
           status: wsGameResp.status,
@@ -445,6 +481,9 @@ export default class SlideService extends CommonService {
 
     const isExistingUser = await this.userModel.exists({
       userId: playerInfo.playerId,
+      platformId: playerInfo?.platformId,
+      operatorId: playerInfo?.operatorId,
+      brandId: playerInfo?.brandId,
     });
 
     if (!isExistingUser) {
@@ -457,6 +496,10 @@ export default class SlideService extends CommonService {
         userId: playerInfo.playerId,
         token: data.token,
         clientSeed: playerInfo.playerId.slice(0, 10),
+        platformId: playerInfo?.platformId,
+        operatorId: playerInfo?.operatorId,
+        brandId: playerInfo?.brandId,
+        avtar: "av1",
       });
     }
     let currGame: { gameId: string, gameEndIn: number } = this.cache.get(
@@ -464,6 +507,7 @@ export default class SlideService extends CommonService {
     );
     let activeGameInfo: WSSlideGameInterface;
     let activeGame = {};
+    let gameUnderMaintenance = await this.slideHashModel.exists({isUsed: false});
 
     if (currGame?.gameId) {
       activeGameInfo = this.cache.get(`${GameCode.SLIDE}/${currGame.gameId}`);
@@ -505,7 +549,7 @@ export default class SlideService extends CommonService {
     // await this.gameModel.deleteMany({gameCode: GameCode.SLIDE})
 
     this.logger.info("===SLIDE: getUserSession ended===");
-    return { ...playerInfo, gameCode: GameCode.SLIDE, activeGame };
+    return { ...playerInfo, gameCode: GameCode.SLIDE, activeGame, gameUnderMaintenance: !gameUnderMaintenance };
   }
 
   public async betPlace(data: SlideBetSessionInterface) {
@@ -521,7 +565,7 @@ export default class SlideService extends CommonService {
       throw new Error(i18next.t("crash.betNotAllowed"));
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({ userId: data.userId, platformId: data.platformId, operatorId: data.operatorId, brandId: data.brandId })
       .select({
         _id: 1,
         serverSeed: 1,
@@ -565,6 +609,9 @@ export default class SlideService extends CommonService {
       hashedServerSeed: user.hashedServerSeed,
       nonce: user.nonce,
       betId,
+      platformId: data.platformId, 
+      operatorId: data.operatorId, 
+      brandId: data.brandId,
       payout,
       payoutMultiplier,
       active: false,
@@ -595,15 +642,15 @@ export default class SlideService extends CommonService {
     };
 
     //Emit Soctket event for bet place as per by game Mode
-    this.socket.to(GameCode.SLIDE).emit(
-      `${GameCode.SLIDE}/${data.gameMode}/${SocketEvents.betPlaced}`,
+    this.socket.to(`${data.brandId}/${data.gameMode}/${GameCode.SLIDE}`).emit(
+      `${GameCode.SLIDE}/${SocketEvents.betPlaced}`,
       betResp
     );
 
     await this.gameModel.create(info);
     await this.userModel.updateOne(
       { _id: user._id },
-      { nonce: user.nonce + 1 }
+      { $inc: { nonce: 1 } }
     );
 
     this.logger.info("===SLIDE: betPlace ended===");
@@ -619,6 +666,9 @@ export default class SlideService extends CommonService {
         betId: data.betId,
         gameCode: GameCode.SLIDE,
         gameMode: data.gameMode,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId
       })
       .select({
         userId: 1,
@@ -644,7 +694,12 @@ export default class SlideService extends CommonService {
     }
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({
+        userId: data.userId,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId,
+      })
       .select({ serverSeed: 1 });
 
     let gameInfo = await this.slideGames.aggregate([
@@ -715,6 +770,9 @@ export default class SlideService extends CommonService {
         gameId: data.gameId,
         gameCode: GameCode.SLIDE,
         gameMode: data.gameMode,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId
       })
       .select({
         userId: 1,

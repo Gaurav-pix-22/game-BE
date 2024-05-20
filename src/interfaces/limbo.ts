@@ -14,6 +14,9 @@ export interface LimboBetSessionInterface {
   currency: string;
   betAmount: number;
   targetMultiplier: number;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface InitSchemaInterface {
@@ -27,4 +30,7 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }

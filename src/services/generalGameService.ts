@@ -41,7 +41,11 @@ export default class GameService extends CommonService {
           $lte: new Date(endOfMonth),
         },
         gameMode: data.gameMode,
-        betStatus: {$nin: [BetStatus.debitSuccess]}
+        platformId: data.platformId,
+        operatorId: data.operatorId,
+        brandId: data.brandId,
+        gameCode: { $ne: GameCode.AVIATORX },
+        betStatus: { $nin: [BetStatus.debitSuccess] },
       })
       .select({
         userId: 1,
@@ -82,19 +86,27 @@ export default class GameService extends CommonService {
 
     let startOfMonth = moment().startOf("month");
     let endOfMonth = moment().endOf("month");
+    let filters = {
+      userId: data.userId,
+      date: {
+        //@ts-ignore
+        $gte: new Date(startOfMonth),
+        //@ts-ignore
+        $lte: new Date(endOfMonth),
+      },
+      gameMode: data.gameMode,
+      platformId: data.platformId,
+      operatorId: data.operatorId,
+      brandId: data.brandId,
+      gameCode: { $ne: GameCode.AVIATORX }, //By default aviator will be deselected
+      betStatus: { $nin: [BetStatus.debitSuccess] },
+    };
+
+    //@ts-ignore
+    if (data.gameCode) filters = { ...filters, gameCode: data.gameCode };
 
     const resp = await this.gameModel
-      .find({
-        userId: data.userId,
-        date: {
-          //@ts-ignore
-          $gte: new Date(startOfMonth),
-          //@ts-ignore
-          $lte: new Date(endOfMonth),
-        },
-        gameMode: data.gameMode,
-        betStatus: {$nin: [BetStatus.debitSuccess]}
-      })
+      .find(filters)
       .select({
         userId: 1,
         currency: 1,
@@ -163,6 +175,9 @@ export default class GameService extends CommonService {
               $lte: new Date(endOfDay),
             },
             status: MultiPlayerGameStates.ended,
+            platformId: data.platformId,
+            operatorId: data.operatorId,
+            brandId: data.brandId,
           })
           .select({
             _id: 1,
@@ -213,6 +228,9 @@ export default class GameService extends CommonService {
               $lte: new Date(endOfDay),
             },
             status: MultiPlayerGameStates.ended,
+            platformId: data.platformId,
+            operatorId: data.operatorId,
+            brandId: data.brandId,
           })
           .select({
             _id: 1,

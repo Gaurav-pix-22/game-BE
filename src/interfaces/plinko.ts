@@ -16,6 +16,9 @@ export interface PlinkoBetSessionInterface {
   betAmount: number;
   risk: PlinkoLevel;
   rows: number;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface UserDBGameSessionInterface {
@@ -34,6 +37,9 @@ export interface UserDBGameSessionInterface {
   payoutMultiplier: number;
   state: PlinkoStateInterface;
   date: Date;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface InitSchemaInterface {
@@ -47,4 +53,7 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }

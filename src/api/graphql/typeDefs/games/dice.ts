@@ -20,7 +20,10 @@ type diceUserSession {
     language: String,
     paytable: [dicePaytable],
     gameCode: String!,
-    gameMode: String
+    gameMode: String,
+    platformId: String,
+    operatorId: String,
+    brandId: String
 }
 
 type diceRollSession {

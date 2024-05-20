@@ -1,6 +1,9 @@
 import { Joi } from "celebrate";
 import { GameCode, PlayMode, GameMode } from "../config/constant";
 
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 const token = Joi.string().trim().required();
 const gameCode = Joi.string().trim().required().valid(GameCode.MINE);
 const gameMode = Joi.string()
@@ -33,6 +36,9 @@ const nextMineSchema = Joi.object({
     .items(Joi.number().min(0).max(24))
     .required(),
   betId,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const cashoutSchema = Joi.object({
@@ -41,6 +47,9 @@ const cashoutSchema = Joi.object({
   gameCode,
   userId,
   betId,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const betSessionSchema = Joi.object({
@@ -57,6 +66,9 @@ const betSessionSchema = Joi.object({
     then: Joi.array().min(1).items(Joi.number().min(0).max(24)).required(),
     otherwise: Joi.forbidden(),
   }),
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 export { initSchema, betSessionSchema, nextMineSchema, cashoutSchema };

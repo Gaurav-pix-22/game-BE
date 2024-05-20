@@ -32,6 +32,9 @@ export interface SlideBetSessionInterface {
   betAmount: number;
   targetMultiplier: number;
   gameId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface SlidePlayerStatusInterface {
@@ -46,6 +49,9 @@ export interface SlideGameCashoutInterface {
   userId: string;
   gameCode: GameCode.SLIDE;
   gameMode: GameMode;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface WSSlidePlayersInterface {
@@ -63,6 +69,9 @@ export interface WSSlidePlayersInterface {
   gameMode: GameMode;
   slideState: SlidePlayerStatusInterface;
   date: Date;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface WSSlideGameInterface {
@@ -91,6 +100,9 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface PreviousSlideInfo {
@@ -98,4 +110,7 @@ export interface PreviousSlideInfo {
   gameMode: GameMode;
   userId: string;
   gameId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }

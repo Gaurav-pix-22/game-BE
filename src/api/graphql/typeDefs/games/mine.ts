@@ -13,7 +13,10 @@ type mineUserSession {
     minePaytable: [[minePaytable]],
     activeBet: minePlaySession,
     gameCode: String!,
-    gameMode: String
+    gameMode: String,
+    platformId: String,
+    operatorId: String,
+    brandId: String
 }
 
 type mineRound {

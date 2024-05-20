@@ -8,12 +8,17 @@ import { Inject, Service } from "typedi";
 import userService from "./userService";
 import rgsService from "./rgsService";
 import gameOutcomes from "./provablyFair/gameOutcomes";
-import { GameCode, DiceGameConditions, SocketEvents, BetStatus } from "../config/constant";
+import {
+  GameCode,
+  DiceGameConditions,
+  SocketEvents,
+  BetStatus,
+} from "../config/constant";
 import {
   DiceRollSessionInterface,
   InitSchemaInterface,
   BetInfo,
-  DiceStateInterface
+  DiceStateInterface,
 } from "./../interfaces/dice";
 import gameConfig from "../config/math/dice";
 
@@ -34,6 +39,7 @@ export default class DiceService extends CommonService {
     this.logger.info("===getUserSession started ===");
     const rgsServiceInstance = Container.get(rgsService);
     const userServiceInstance = Container.get(userService);
+    // throw new Error(i18next.t("general.invalidUserSeed"));
 
     let playerInfo = await rgsServiceInstance.validateToken({
       token: data.token,
@@ -42,6 +48,9 @@ export default class DiceService extends CommonService {
 
     const isExistingUser = await this.userModel.exists({
       userId: playerInfo.playerId,
+      platformId: playerInfo?.platformId,
+      operatorId: playerInfo?.operatorId,
+      brandId: playerInfo?.brandId,
     });
 
     if (!isExistingUser) {
@@ -54,6 +63,10 @@ export default class DiceService extends CommonService {
         userId: playerInfo.playerId,
         token: data.token,
         clientSeed: playerInfo.playerId.slice(0, 10),
+        platformId: playerInfo?.platformId,
+        operatorId: playerInfo?.operatorId,
+        brandId: playerInfo?.brandId,
+        avtar: "av1",
       });
     }
 
@@ -73,7 +86,12 @@ export default class DiceService extends CommonService {
 
     this.startPerformanceLogging();
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({
+        userId: data.userId,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+      })
       .select({
         _id: 1,
         serverSeed: 1,
@@ -82,7 +100,7 @@ export default class DiceService extends CommonService {
         nonce: 1,
       })
       .lean();
-      this.endPerformanceLogging("diceRoll: get user details")
+    this.endPerformanceLogging("diceRoll: get user details");
 
     if (!user._id || !user?.hashedServerSeed) {
       throw new Error(i18next.t("general.invalidUserSeed"));
@@ -101,7 +119,9 @@ export default class DiceService extends CommonService {
       probabilityOver: number;
       multiplierOver: number;
       multiplierUnder: number;
-    } = gameConfig[data.gameMode].multiplierMap.find((el) => el.outcome === data.target);
+    } = gameConfig[data.gameMode].multiplierMap.find(
+      (el) => el.outcome === data.target
+    );
 
     const payoutMultiplier =
       outcome > data.target && data.condition === DiceGameConditions.above
@@ -125,26 +145,29 @@ export default class DiceService extends CommonService {
       playerId: data.userId,
       amount: data.betAmount,
       betId,
-      gameCode: GameCode.DICE
-    })
-
-    const credResp = await rgsServiceInstance.credit([{
-      token: data.token,
-      playerId: data.userId,
-      amount: payout,
-      betId,
       gameCode: GameCode.DICE,
-      clientSeed: user.clientSeed,
-      serverSeed: user.serverSeed,
-      hashedServerSeed: user.hashedServerSeed,
-      nonce: user.nonce,
-      payoutMultiplier
-    }])
-    const {balance} = credResp[0];
+    });
 
-    if(credResp[0]?.error) throw new Error(credResp[0]?.description || "credit internal error")
+    const credResp = await rgsServiceInstance.credit([
+      {
+        token: data.token,
+        playerId: data.userId,
+        amount: payout,
+        betId,
+        gameCode: GameCode.DICE,
+        clientSeed: user.clientSeed,
+        serverSeed: user.serverSeed,
+        hashedServerSeed: user.hashedServerSeed,
+        nonce: user.nonce,
+        payoutMultiplier,
+      },
+    ]);
+    const { balance } = credResp[0];
 
-    this.endPerformanceLogging("diceRoll: rgs-debit-credit-call")
+    if (credResp[0]?.error)
+      throw new Error(credResp[0]?.description || "credit internal error");
+
+    this.endPerformanceLogging("diceRoll: rgs-debit-credit-call");
 
     const info = {
       token: data.token,
@@ -158,6 +181,9 @@ export default class DiceService extends CommonService {
       hashedServerSeed: user.hashedServerSeed,
       nonce: user.nonce,
       betId,
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
       payout,
       payoutMultiplier,
       active: false,
@@ -170,25 +196,24 @@ export default class DiceService extends CommonService {
       date: new Date(),
     };
 
-    this.socket.emit(`${data.gameMode}/${SocketEvents.cashedout}`, {
-      userId: data.userId,
-      betId,
-      payout,
-      payoutMultiplier,
-      balance,
-      betAmount: data.betAmount,
-      currency: data.currency,
-      gameCode: GameCode.DICE,
-      date: info.date,
-    });
+    this.socket
+      .to(`${data.brandId}/${data.gameMode}`)
+      .emit(`${SocketEvents.cashedout}`, {
+        userId: data.userId,
+        betId,
+        payout,
+        payoutMultiplier,
+        balance,
+        betAmount: data.betAmount,
+        currency: data.currency,
+        gameCode: GameCode.DICE,
+        date: info.date,
+      });
 
     this.startPerformanceLogging();
     const res = await this.gameModel.create(info);
-    await this.userModel.updateOne(
-      { _id: user._id },
-      { nonce: user.nonce + 1 }
-    );
-    this.endPerformanceLogging("diceRoll: user and game update")
+    await this.userModel.updateOne({ _id: user._id }, { $inc: { nonce: 1 } });
+    this.endPerformanceLogging("diceRoll: user and game update");
 
     this.logger.info("===diceRoll ended===");
     return {
@@ -215,7 +240,10 @@ export default class DiceService extends CommonService {
         // userId: data.userId,
         betId: data.betId,
         gameCode: data.gameCode,
-        gameMode: data.gameMode
+        gameMode: data.gameMode,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
       })
       .select({
         userId: 1,
@@ -234,12 +262,17 @@ export default class DiceService extends CommonService {
       })
       .lean();
 
-    if(!resp?._id) {
+    if (!resp?._id) {
       throw new Error(i18next.t("general.invalidBetId"));
     }
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({
+        userId: data.userId,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId,
+      })
       .select({ serverSeed: 1 });
     const outcome = gameConfig[data.gameMode].multiplierMap.find(
       (el) => el.outcome === (resp?.state as DiceStateInterface)?.target
@@ -249,15 +282,17 @@ export default class DiceService extends CommonService {
     return {
       ...resp,
       winChance:
-        (resp?.state as DiceStateInterface).condition === DiceGameConditions.above
+        (resp?.state as DiceStateInterface).condition ===
+        DiceGameConditions.above
           ? outcome.probabilityOver
           : outcome.probabilityUnder,
       multiplier:
-        (resp?.state as DiceStateInterface).condition === DiceGameConditions.above
+        (resp?.state as DiceStateInterface).condition ===
+        DiceGameConditions.above
           ? outcome.multiplierOver
           : outcome.multiplierUnder,
       serverSeed: resp.serverSeed === user.serverSeed ? null : resp.serverSeed,
-      diceState: resp.state
-    }
+      diceState: resp.state,
+    };
   }
 }

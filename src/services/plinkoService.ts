@@ -39,7 +39,12 @@ export default class PlinkoService extends CommonService {
       gameCode: GameCode.PLINKO,
     });
 
-    const isExistingUser = await this.userModel.exists({userId: playerInfo.playerId});
+    const isExistingUser = await this.userModel.exists({
+      userId: playerInfo.playerId,
+      platformId: playerInfo?.platformId,
+      operatorId: playerInfo?.operatorId,
+      brandId: playerInfo?.brandId,
+    });
 
     if (!isExistingUser) {
       this.logger.info(
@@ -51,6 +56,10 @@ export default class PlinkoService extends CommonService {
         userId: playerInfo.playerId,
         token: data.token,
         clientSeed: playerInfo.playerId.slice(0, 10),
+        platformId: playerInfo?.platformId,
+        operatorId: playerInfo?.operatorId,
+        brandId: playerInfo?.brandId,
+        avtar: "av1",
       });
     }
 
@@ -69,7 +78,21 @@ export default class PlinkoService extends CommonService {
     let user: UserInterface = this.cache.get(`${GameCode.PLINKO}/user/${data.userId}`);
 
     if(!user)
-      user = await this.userModel.findOne({userId: data.userId}).select({_id: 1, serverSeed: 1,clientSeed: 1, hashedServerSeed: 1, nonce: 1}).lean();
+      user = await this.userModel
+        .findOne({
+          userId: data.userId,
+          platformId: data?.platformId,
+          operatorId: data?.operatorId,
+          brandId: data?.brandId,
+        })
+        .select({
+          _id: 1,
+          serverSeed: 1,
+          clientSeed: 1,
+          hashedServerSeed: 1,
+          nonce: 1,
+        })
+        .lean();
     
     this.cache.set(`${GameCode.PLINKO}/user/${data.userId}`, {...user, nonce: user.nonce + 1}, 60);
     
@@ -130,6 +153,9 @@ export default class PlinkoService extends CommonService {
       hashedServerSeed: user.hashedServerSeed,
       nonce: user.nonce,
       betId,
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
       payout,
       payoutMultiplier,
       active: false,
@@ -142,7 +168,7 @@ export default class PlinkoService extends CommonService {
       date: new Date(),
     };
 
-    this.socket.emit(`${data.gameMode}/${SocketEvents.cashedout}`, {
+    this.socket.to(`${data.brandId}/${data.gameMode}`).emit(`${SocketEvents.cashedout}`, {
       userId: data.userId,
       betId,
       payout,
@@ -177,12 +203,25 @@ export default class PlinkoService extends CommonService {
   public async getBetInfo(data: BetInfo) {
     this.logger.info("===getBetInfo started for player %s===", data.userId);
 
+    console.log({
+      // userId: data.userId,
+      betId: data.betId,
+      gameCode: GameCode.PLINKO,
+      gameMode: data.gameMode,
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
+    })
+
     const resp = await this.gameModel
       .findOne({
         // userId: data.userId,
         betId: data.betId,
         gameCode: GameCode.PLINKO,
-        gameMode: data.gameMode
+        gameMode: data.gameMode,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
       })
       .select({
         userId: 1,
@@ -205,7 +244,9 @@ export default class PlinkoService extends CommonService {
         throw new Error(i18next.t("general.invalidBetId"));
       }
    
-      const user = await this.userModel.findOne({userId: data.userId}).select({serverSeed: 1});
+      const user = await this.userModel.findOne({userId: data.userId, platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,}).select({serverSeed: 1});
    
       this.logger.info("===getBetInfo ended===");
       return {

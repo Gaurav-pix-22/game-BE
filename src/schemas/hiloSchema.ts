@@ -8,6 +8,9 @@ import {
   CardSuit,
 } from "../config/constant";
 
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 const token = Joi.string().trim().required();
 const betId = Joi.string().trim().required();
 const gameCode = Joi.string().trim().required().valid(GameCode.HILO);
@@ -47,6 +50,9 @@ const betSessionSchema = Joi.object({
   currency,
   betAmount,
   card,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const nextHiloSchema = Joi.object({
@@ -55,6 +61,9 @@ const nextHiloSchema = Joi.object({
   userId,
   betId,
   guess,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const cashoutSchema = Joi.object({
@@ -63,6 +72,9 @@ const cashoutSchema = Joi.object({
   gameCode,
   userId,
   betId,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 export {

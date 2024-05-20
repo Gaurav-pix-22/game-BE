@@ -8,6 +8,18 @@ export enum GameType {
   CASH_PLAY = "cash_play",
 }
 
+export enum DurationType {
+  DAY = "day",
+  MONTH = "month",
+  YEAR = "year",
+}
+
+export enum ReportType {
+  HUGE_WIN = "huge_win",
+  BIGGEST_WIN = "biggest_win",
+  MULTIPLIER = "multiplier",
+}
+
 export enum OrderBy {
   ASC = "asc",
   DESC = "desc",
@@ -22,6 +34,7 @@ export enum GameCode {
   CRASH = "CRASH",
   SLIDE = "SLIDE",
   DIAMOND = "DIAMONDS",
+  AVIATORX = "AVIATORX",
 }
 
 export enum GameMode {
@@ -87,7 +100,8 @@ export enum MultiPlayerGameStates {
   running = "RUNNING",
   halt = "HALT",
   ended = "ENDED",
-  result = "RESULT"
+  result = "RESULT",
+  underMaintenance = "UNDER_MAINTENANCE"
 }
 
 export enum BetStatus {
@@ -95,17 +109,25 @@ export enum BetStatus {
   creditSuccess = "CREDIT_SUCCESS",
   creditUnderProcess = "CREDIT_UNDER_PROCESS",
   creditFailed = "CREDIT_FAILED",
+  refund = "REFUND",
 }
- 
+
 export enum SocketEvents {
   cashout = "CASH_OUT",
   cashedout = "CASHED_OUT",
   unsuccessFullCashout = "UNSUCCESSFULL_CASHOUT", //event for player who lost since he didn't cashout
   playersBetStatus = "PLAYER_BET_STATUS",
   betPlaced = "BET_PLACED",
+  betCancelled = "BET_CANCELLED",
   balance = "BALANCE",
   balanceDebit = "BALANCE_DEBIT",
   balanceCredited = "BALANCE_CREDITED",
   joinRoom = "JOIN_ROOM",
-  leaveRoom = "LEAVE_ROOM"
+  leaveRoom = "LEAVE_ROOM",
+
+  balanceUpdateResult = "BALANCE_UPDATE_RESULT",
 }
+
+export type SocketHandlers = {
+  [key in SocketEvents]?: (data, cb) => Promise<void>;
+};

@@ -2,6 +2,7 @@ import {
   init,
   betPlace,
   cashout,
+  refund,
   getAllBets,
   getPlayerBetHistory,
   betInfo,
@@ -9,7 +10,10 @@ import {
   nextHilo,
   getCrashInfoById,
   getSlideInfoById,
-  getMultiGameCrashHistory
+  getMultiGameCrashHistory,
+  updateUserProfile,
+  getWinReport,
+  previousRound
 } from "./game";
 
 export default {
@@ -20,12 +24,16 @@ export default {
     getMultiGameCrashHistory,
     betInfo,
     getCrashInfoById,
-    getSlideInfoById
+    getSlideInfoById,
+    getWinReport,
+    previousRound
   },
   Mutation: {
     betPlace,
     nextMine,
     nextHilo,
     cashout,
+    refund,
+    updateUserProfile
   },
 };

@@ -13,10 +13,16 @@ import {
   card,
   round,
   BetInfo,
-  gameState
+  gameState,
 } from "../interfaces/hilo";
-import {UserDBGameSessionInterface} from "../interfaces/common"
-import { GameCode, HiloGameConditions, SocketEvents, CardRank, BetStatus } from "../config/constant";
+import { UserDBGameSessionInterface } from "../interfaces/common";
+import {
+  GameCode,
+  HiloGameConditions,
+  SocketEvents,
+  CardRank,
+  BetStatus,
+} from "../config/constant";
 import userService from "./userService";
 import rgsService from "./rgsService";
 import gameConfig from "../config/math/hilo";
@@ -46,6 +52,9 @@ export default class HiloService extends CommonService {
 
     const isExistingUser = await this.userModel.exists({
       userId: playerInfo.playerId,
+      platformId: playerInfo?.platformId,
+      operatorId: playerInfo?.operatorId,
+      brandId: playerInfo?.brandId,
     });
 
     if (!isExistingUser) {
@@ -58,6 +67,10 @@ export default class HiloService extends CommonService {
         userId: playerInfo.playerId,
         token: data.token,
         clientSeed: playerInfo.playerId.slice(0, 10),
+        platformId: playerInfo?.platformId,
+        operatorId: playerInfo?.operatorId,
+        brandId: playerInfo?.brandId,
+        avtar: "av1",
       });
     }
 
@@ -67,14 +80,19 @@ export default class HiloService extends CommonService {
         playerInfo.playerId
       );
       activeBet = await this.gameModel
-        .findOne({ userId: playerInfo.playerId, active: true, gameCode: GameCode.HILO, gameMode: playerInfo.gameMode })
+        .findOne({
+          userId: playerInfo.playerId,
+          active: true,
+          gameCode: GameCode.HILO,
+          gameMode: playerInfo.gameMode,
+        })
         .select({
           betId: 1,
           state: 1,
           payout: 1,
           payoutMultiplier: 1,
           betAmount: 1,
-          active: 1
+          active: 1,
         })
         .lean();
     }
@@ -84,7 +102,10 @@ export default class HiloService extends CommonService {
       ...playerInfo,
       paytable: gameConfig[playerInfo.gameMode].multiplierMap,
       gameCode: GameCode.HILO,
-      activeBet: activeBet && Object.keys(activeBet)?.length > 0 ? {...activeBet, hiloState: {...activeBet.state}} : {}
+      activeBet:
+        activeBet && Object.keys(activeBet)?.length > 0
+          ? { ...activeBet, hiloState: { ...activeBet.state } }
+          : {},
     };
   }
 
@@ -99,7 +120,7 @@ export default class HiloService extends CommonService {
         state: 1,
         betAmount: 1,
         date: 1,
-        gameMode: 1
+        gameMode: 1,
       })
       .lean();
 
@@ -120,8 +141,12 @@ export default class HiloService extends CommonService {
     let isFailedGuess: Boolean = false;
     let isSkippedGuess: Boolean = false;
     let lastCard: card;
-    let lastRound: round = (session?.state as gameState)?.rounds?.slice(-1).pop();
-    let expectedOucome = (session.state as gameState).outcome[(session.state as gameState).rounds.length];
+    let lastRound: round = (session?.state as gameState)?.rounds
+      ?.slice(-1)
+      .pop();
+    let expectedOucome = (session.state as gameState).outcome[
+      (session.state as gameState).rounds.length
+    ];
 
     if (!lastRound?.payoutMultiplier) {
       this.logger.info(
@@ -134,7 +159,7 @@ export default class HiloService extends CommonService {
         "===Hilo: last round info played by user %s===",
         JSON.stringify(lastRound)
       );
-      lastCard = {...lastRound.card}
+      lastCard = { ...lastRound.card };
     }
 
     if (
@@ -148,13 +173,16 @@ export default class HiloService extends CommonService {
 
     switch (data.guess) {
       case HiloGameConditions.low:
-        isFailedGuess = gameConfig.rankValue[lastCard?.rank] <= expectedOucome.rankValue;
+        isFailedGuess =
+          gameConfig.rankValue[lastCard?.rank] <= expectedOucome.rankValue;
         break;
       case HiloGameConditions.high:
-        isFailedGuess = gameConfig.rankValue[lastCard?.rank] >= expectedOucome.rankValue;
+        isFailedGuess =
+          gameConfig.rankValue[lastCard?.rank] >= expectedOucome.rankValue;
         break;
       case HiloGameConditions.same:
-        isFailedGuess = gameConfig.rankValue[lastCard?.rank] !== expectedOucome.rankValue;
+        isFailedGuess =
+          gameConfig.rankValue[lastCard?.rank] !== expectedOucome.rankValue;
         break;
       case HiloGameConditions.higherEqual:
         isFailedGuess =
@@ -176,7 +204,7 @@ export default class HiloService extends CommonService {
     let _lastCardPayoutInfo = gameConfig[session.gameMode].multiplierMap.find(
       (el) => lastCard.rank === el.rank
     );
-  
+
     let _payoutMultiplier =
       data.guess === HiloGameConditions.higherEqual ||
       // (lastCard.rank === CardRank.ACE &&
@@ -221,7 +249,7 @@ export default class HiloService extends CommonService {
         ],
       };
     } else {
-      updatedSession =  {
+      updatedSession = {
         ...session.state,
         //@ts-ignore
         rounds: [
@@ -235,33 +263,44 @@ export default class HiloService extends CommonService {
             payoutMultiplier: _payoutMultiplier,
           },
         ],
-      }
+      };
     }
 
-    await this.gameModel.findOneAndUpdate({_id: session._id}, {state: {...updatedSession}});
+    await this.gameModel.findOneAndUpdate(
+      { _id: session._id },
+      { state: { ...updatedSession } }
+    );
 
-    if((updatedSession?.state as gameState)?.rounds?.length >= 104 || isFailedGuess) {
-      this.logger.info("===Hilo: max prediction done by the user or wrong prediction being made hence cashing out===");
+    if (
+      (updatedSession?.state as gameState)?.rounds?.length >= 104 ||
+      isFailedGuess
+    ) {
+      this.logger.info(
+        "===Hilo: max prediction done by the user or wrong prediction being made hence cashing out==="
+      );
 
       return await this.cashOut({
         token: data.token,
         gameCode: GameCode.HILO,
         gameMode: session.gameMode,
         userId: data.userId,
-        betId: data.betId
-      })
+        betId: data.betId,
+        platformId: data.platformId,
+        operatorId: data.operatorId,
+        brandId: data.brandId,
+      });
     }
 
     this.logger.info("===Hilo: updatePlaysession ended===");
     return {
       gameCode: GameCode.HILO,
       betId: data.betId,
-      hiloState: {...updatedSession},
+      hiloState: { ...updatedSession },
       betAmount: session.betAmount,
       date: session.date,
       active: !isFailedGuess,
       payout: 0,
-      payoutMultiplier: 0
+      payoutMultiplier: 0,
     };
   }
 
@@ -272,7 +311,12 @@ export default class HiloService extends CommonService {
     const rgsServiceInstance = Container.get(rgsService);
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({
+        userId: data.userId,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+      })
       .select({
         _id: 1,
         serverSeed: 1,
@@ -283,9 +327,12 @@ export default class HiloService extends CommonService {
       .lean();
     const isActiveBet = await this.gameModel.exists({
       userId: data.userId,
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
       active: true,
       gameCode: GameCode.HILO,
-      gameMode: data.gameMode
+      gameMode: data.gameMode,
     });
 
     if (!user._id || !user?.hashedServerSeed) {
@@ -325,13 +372,13 @@ export default class HiloService extends CommonService {
     }, []);
     const betId = uuidv4();
 
-    const {balance} = await rgsServiceInstance.debit({
+    const { balance } = await rgsServiceInstance.debit({
       token: data.token,
       playerId: data.userId,
       amount: data.betAmount,
       betId,
-      gameCode: GameCode.HILO
-    })
+      gameCode: GameCode.HILO,
+    });
 
     await this.gameModel.create({
       userId: data.userId,
@@ -345,6 +392,9 @@ export default class HiloService extends CommonService {
       nonce: user.nonce,
       token: data.token,
       betId,
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
       payout: 0,
       payoutMultiplier: 0,
       active: true,
@@ -356,10 +406,7 @@ export default class HiloService extends CommonService {
       },
       date: new Date(),
     });
-    await this.userModel.updateOne(
-      { _id: user._id },
-      { nonce: user.nonce + 1 }
-    );
+    await this.userModel.updateOne({ _id: user._id }, { $inc: { nonce: 1 } });
 
     this.logger.info("===Hilo: betPlace ended===");
     return {
@@ -384,8 +431,24 @@ export default class HiloService extends CommonService {
     const rgsServiceInstance = Container.get(rgsService);
 
     const session = await this.gameModel
-      .findOne({ userId: data.userId, betId: data.betId, active: true })
-      .select({ state: 1, betAmount: 1, date: 1, currency: 1, clientSeed: 1, serverSeed: 1, hashedServerSeed: 1, nonce: 1 })
+      .findOne({
+        userId: data.userId,
+        betId: data.betId,
+        active: true,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+      })
+      .select({
+        state: 1,
+        betAmount: 1,
+        date: 1,
+        currency: 1,
+        clientSeed: 1,
+        serverSeed: 1,
+        hashedServerSeed: 1,
+        nonce: 1,
+      })
       .lean();
 
     if (!session?._id) {
@@ -397,22 +460,27 @@ export default class HiloService extends CommonService {
       throw new Error(i18next.t("hilo.invalidCashout"));
     }
 
-    let lastRound: round = (session?.state as gameState)?.rounds?.slice(-1).pop();
+    let lastRound: round = (session?.state as gameState)?.rounds
+      ?.slice(-1)
+      .pop();
 
-    const credResp = await rgsServiceInstance.credit([{
-      token: data.token,
-      playerId: data.userId,
-      amount: session.betAmount * lastRound.payoutMultiplier,
-      betId: data.betId,
-      gameCode: GameCode.HILO,
-      clientSeed: session.clientSeed,
-      serverSeed: session.serverSeed,
-      hashedServerSeed: session.hashedServerSeed,
-      nonce: session.nonce,
-      payoutMultiplier: lastRound.payoutMultiplier
-    }])
-    const {balance} = credResp[0];
-    if(credResp[0]?.error) throw new Error(credResp[0]?.description || "credit internal error")
+    const credResp = await rgsServiceInstance.credit([
+      {
+        token: data.token,
+        playerId: data.userId,
+        amount: session.betAmount * lastRound.payoutMultiplier,
+        betId: data.betId,
+        gameCode: GameCode.HILO,
+        clientSeed: session.clientSeed,
+        serverSeed: session.serverSeed,
+        hashedServerSeed: session.hashedServerSeed,
+        nonce: session.nonce,
+        payoutMultiplier: lastRound.payoutMultiplier,
+      },
+    ]);
+    const { balance } = credResp[0];
+    if (credResp[0]?.error)
+      throw new Error(credResp[0]?.description || "credit internal error");
 
     await this.gameModel.findByIdAndUpdate(
       { _id: session._id },
@@ -424,29 +492,31 @@ export default class HiloService extends CommonService {
       }
     );
 
-    this.socket.emit(`${data.gameMode}/${SocketEvents.cashedout}`, {
-      userId: data.userId,
-      betId: data.betId,
-      payout: session.betAmount * lastRound.payoutMultiplier,
-      payoutMultiplier: lastRound.payoutMultiplier,
-      betAmount: session.betAmount,
-      balance,
-      currency: session.currency,
-      gameCode: GameCode.HILO,
-      date: session.date,
-    });
+    this.socket
+      .to(`${data.brandId}/${data.gameMode}`)
+      .emit(`${SocketEvents.cashedout}`, {
+        userId: data.userId,
+        betId: data.betId,
+        payout: session.betAmount * lastRound.payoutMultiplier,
+        payoutMultiplier: lastRound.payoutMultiplier,
+        betAmount: session.betAmount,
+        balance,
+        currency: session.currency,
+        gameCode: GameCode.HILO,
+        date: session.date,
+      });
 
     this.logger.info("===Hilo: cashOut ended===");
     return {
       gameCode: GameCode.HILO,
       betId: data.betId,
-      hiloState: {...session.state},
+      hiloState: { ...session.state },
       betAmount: session.betAmount,
       date: session.date,
       active: false,
       payout: session.betAmount * lastRound.payoutMultiplier,
       payoutMultiplier: lastRound.payoutMultiplier,
-      balance
+      balance,
     };
   }
 
@@ -458,7 +528,10 @@ export default class HiloService extends CommonService {
         // userId: data.userId,
         betId: data.betId,
         gameCode: GameCode.HILO,
-        gameMode: data.gameMode
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+        gameMode: data.gameMode,
       })
       .select({
         userId: 1,
@@ -473,17 +546,28 @@ export default class HiloService extends CommonService {
         serverSeed: 1,
         hashedServerSeed: 1,
         nonce: 1,
-        gameCode: 1
+        gameCode: 1,
       })
       .lean();
 
-      if(!resp?._id) {
-        throw new Error(i18next.t("general.invalidBetId"));
-      }
+    if (!resp?._id) {
+      throw new Error(i18next.t("general.invalidBetId"));
+    }
 
-      const user = await this.userModel.findOne({userId: data.userId}).select({serverSeed: 1});
-   
-      this.logger.info("===getBetInfo ended===");
-      return {...resp, hiloState: {...resp.state}, serverSeed: resp.serverSeed === user.serverSeed ? null : resp.serverSeed};
+    const user = await this.userModel
+      .findOne({
+        userId: data.userId,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+      })
+      .select({ serverSeed: 1 });
+
+    this.logger.info("===getBetInfo ended===");
+    return {
+      ...resp,
+      hiloState: { ...resp.state },
+      serverSeed: resp.serverSeed === user.serverSeed ? null : resp.serverSeed,
+    };
   }
 }

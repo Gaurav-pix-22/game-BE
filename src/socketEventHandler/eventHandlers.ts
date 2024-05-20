@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { Logger } from "winston";
 import roomHandlers from "./room";
+import rgsHandler from "./rgsHandlers";
 import { GameCode } from "../config/constant";
 
 //structure refered from following source
@@ -11,6 +12,7 @@ const main = (io: Server, logger: Logger) => {
     logger.info(`New connection: ${socket.id}`);
 
     const eventHandlers = [roomHandlers(socket, logger)];
+    const eventHandlersV2 = [rgsHandler(socket)]
 
     // Bind events to handlers
     eventHandlers.forEach((handler) => {
@@ -18,6 +20,12 @@ const main = (io: Server, logger: Logger) => {
         socket.on(eventName, handler[eventName]);
       }
     });
+
+    // eventHandlersV2.forEach((handler) => {
+    //   for (const eventName in handler) {
+    //     socket.on(eventName, handler[eventName]);
+    //   }
+    // });
 
     socket.on("disconnect", () => {
       logger.info(`Connection left (${socket.id})`);

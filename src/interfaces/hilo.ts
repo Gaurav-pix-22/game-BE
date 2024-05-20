@@ -35,6 +35,9 @@ export interface NextCardInterface {
   userId: string;
   guess: HiloGameConditions;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface BetSessionInterface {
@@ -45,6 +48,9 @@ export interface BetSessionInterface {
   currency: string;
   betAmount: number;
   card: card;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 export interface CashoutInterface {
   token: string;
@@ -52,6 +58,9 @@ export interface CashoutInterface {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface InitSchemaInterface {
@@ -65,4 +74,7 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }

@@ -1,6 +1,7 @@
 import Container from "typedi";
 import Logger from "./logger";
 import crashService from "../services/crashService";
+import aviatorXService from "../services/aviatorXService"
 import slideService from "../services/slideService";
 
 const crashInit = async () => {
@@ -23,6 +24,26 @@ const crashInit = async () => {
   }
 };
 
+const aviatorXInit = async () => {
+  try {
+    Logger.info("✌️ aviatorXInit begins");
+    let proceedNext = true;
+    let message = "";
+
+    while (proceedNext) {
+      const crashServiceInstance = Container.get(aviatorXService);
+      let result = await crashServiceInstance.createGame();
+      proceedNext = result.proceedNext;
+      message = result.message;
+    }
+
+    Logger.error(`aviatorXInit terminated: ${message}`);
+  } catch (e) {
+    console.log(e)
+    Logger.error(`aviatorXInit stopped by err: ${e?.message}`);
+  }
+};
+
 const slideInit = async () => {
   try {
     Logger.info("✌️ slideInit begins");
@@ -40,4 +61,4 @@ const slideInit = async () => {
   }
 };
 
-export { crashInit, slideInit };
+export { crashInit, slideInit, aviatorXInit };

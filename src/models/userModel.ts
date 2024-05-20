@@ -11,33 +11,52 @@ const user = new mongoose.Schema(
     clientSeed: {
       type: String,
       index: true,
-      default: ""
+      default: "",
     },
     serverSeed: {
       type: String,
-      default: ""
+      default: "",
     },
     hashedServerSeed: {
       type: String,
       index: true,
-      default: ""
+      default: "",
     },
     nextServerSeed: {
       type: String,
-      default: ""
+      default: "",
+    },
+    avtar: {
+      type: String,
+      default: "av1",
+    },
+    platformId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    operatorId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    brandId: {
+      type: String,
+      default: "",
+      index: true,
     },
     hashedNextServerSeed: {
       type: String,
-      default: ""
+      default: "",
     },
     nonce: {
       type: Number,
-      default: 0
+      default: 0,
     },
     seedHistory: {
       type: Object,
       index: true,
-      default: {}
+      default: {},
     },
   },
   { timestamps: true }

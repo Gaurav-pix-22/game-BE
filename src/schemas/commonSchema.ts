@@ -15,6 +15,9 @@ const gameMode = Joi.string()
 const page = Joi.number();
 const limit = Joi.number();
 const orderBy = Joi.string().valid(...Object.values(OrderBy));
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 
 const allBetSchema = Joi.object({
   token,
@@ -22,6 +25,9 @@ const allBetSchema = Joi.object({
   page,
   limit,
   orderBy,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const playerBetSchema = Joi.object({
@@ -31,6 +37,13 @@ const playerBetSchema = Joi.object({
   page,
   limit,
   orderBy,
+  gameCode: Joi.string()
+  .trim()
+  .valid(...Object.values(GameCode))
+  .allow(""),
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const betInfoSchema = Joi.object({
@@ -38,6 +51,9 @@ const betInfoSchema = Joi.object({
   gameMode,
   userId,
   betId,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const prevMultiGameInfo = Joi.object({
@@ -47,6 +63,9 @@ const prevMultiGameInfo = Joi.object({
   page,
   limit,
   orderBy,
+  platformId,
+  operatorId,
+  brandId
 })
 
 export { allBetSchema, playerBetSchema, betInfoSchema, prevMultiGameInfo };

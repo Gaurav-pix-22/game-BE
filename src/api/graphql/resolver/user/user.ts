@@ -23,7 +23,7 @@ const validateUser = async (parent, { token }) => {
 
 const generateHash = async (parent, { initialHash, gameCode }) => {
   const userServiceInstance = Container.get(userService);
-  // await userServiceInstance.generateHashCodes(initialHash, gameCode);
+  await userServiceInstance.generateHashCodes(initialHash, gameCode);
 
   return { added: true };
 };

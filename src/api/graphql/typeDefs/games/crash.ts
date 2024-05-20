@@ -29,7 +29,10 @@ type crashUserSession {
     language: String,
     activeGame: activeGameSession,
     gameCode: String!,
-    gameMode: String
+    gameMode: String,
+    platformId: String,
+    operatorId: String,
+    brandId: String
 }
 
 type crashGameState {

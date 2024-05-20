@@ -5,6 +5,7 @@ import limbo from "./games/limbo";
 import diamond from "./games/diamond";
 import plinko from "./games/plinko";
 import crash from "./games/crash";
+import aviatorX from "./games/aviatorX";
 import slide from "./games/slide";
 import common from "./games";
 import user from "./user";
@@ -19,5 +20,6 @@ export default [
   diamond,
   plinko,
   crash,
+  aviatorX,
   slide,
 ];

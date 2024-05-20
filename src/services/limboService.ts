@@ -11,7 +11,7 @@ import {
   LimboBetSessionInterface,
   InitSchemaInterface,
   BetInfo,
-  LimboGameStateInterface
+  LimboGameStateInterface,
 } from "./../interfaces/limbo";
 import userService from "./userService";
 import rgsService from "./rgsService";
@@ -39,7 +39,12 @@ export default class LimboService extends CommonService {
       gameCode: GameCode.LIMBO,
     });
 
-    const isExistingUser = await this.userModel.exists({userId: playerInfo.playerId});
+    const isExistingUser = await this.userModel.exists({
+      userId: playerInfo.playerId,
+      platformId: playerInfo?.platformId,
+      operatorId: playerInfo?.operatorId,
+      brandId: playerInfo?.brandId,
+    });
 
     if (!isExistingUser) {
       this.logger.info(
@@ -51,29 +56,52 @@ export default class LimboService extends CommonService {
         userId: playerInfo.playerId,
         token: data.token,
         clientSeed: playerInfo.playerId.slice(0, 10),
+        platformId: playerInfo?.platformId,
+        operatorId: playerInfo?.operatorId,
+        brandId: playerInfo?.brandId,
+        avtar: "av1",
       });
     }
 
     this.logger.info("===getUserSession ended===");
-    return {...playerInfo, gameCode: GameCode.LIMBO };
+    return { ...playerInfo, gameCode: GameCode.LIMBO };
   }
 
   public async limboBet(data: LimboBetSessionInterface) {
     this.logger.info("===limboBet started ===");
 
-    if(data.targetMultiplier < 1.01 || data.targetMultiplier > 1000000)
-     throw new Error(i18next.t('limbo.invalidTarget'));
-    
+    if (data.targetMultiplier < 1.01 || data.targetMultiplier > 1000000)
+      throw new Error(i18next.t("limbo.invalidTarget"));
+
     const gameOutcomesInstance = Container.get(gameOutcomes);
     const rgsServiceInstance = Container.get(rgsService);
 
-    const user = await this.userModel.findOne({userId: data.userId}).select({_id: 1, serverSeed: 1,clientSeed: 1, hashedServerSeed: 1, nonce: 1}).lean();
-    
-    if(!user._id || !user?.hashedServerSeed) 
-      throw new Error(i18next.t('general.invalidUserSeed'));
+    const user = await this.userModel
+      .findOne({
+        userId: data.userId,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+      })
+      .select({
+        _id: 1,
+        serverSeed: 1,
+        clientSeed: 1,
+        hashedServerSeed: 1,
+        nonce: 1,
+      })
+      .lean();
 
-    const generatedTarget = await gameOutcomesInstance.generateGameOutcomes(user.serverSeed, user.clientSeed, user.nonce, GameCode.LIMBO);
-    let outcome = Math.trunc(generatedTarget[0]*100)/100;
+    if (!user._id || !user?.hashedServerSeed)
+      throw new Error(i18next.t("general.invalidUserSeed"));
+
+    const generatedTarget = await gameOutcomesInstance.generateGameOutcomes(
+      user.serverSeed,
+      user.clientSeed,
+      user.nonce,
+      GameCode.LIMBO
+    );
+    let outcome = Math.trunc(generatedTarget[0] * 100) / 100;
     outcome = outcome < 1 ? 1 : outcome;
 
     const betId = uuidv4();
@@ -84,15 +112,16 @@ export default class LimboService extends CommonService {
     const payoutMultiplier =
       data.targetMultiplier <= outcome ? data.targetMultiplier : 0;
 
-      await rgsServiceInstance.debit({
-        token: data.token,
-        playerId: data.userId,
-        amount: data.betAmount,
-        betId,
-        gameCode: GameCode.LIMBO
-      })
-  
-      const credResp = await rgsServiceInstance.credit([{
+    await rgsServiceInstance.debit({
+      token: data.token,
+      playerId: data.userId,
+      amount: data.betAmount,
+      betId,
+      gameCode: GameCode.LIMBO,
+    });
+
+    const credResp = await rgsServiceInstance.credit([
+      {
         token: data.token,
         playerId: data.userId,
         amount: payout,
@@ -102,10 +131,12 @@ export default class LimboService extends CommonService {
         serverSeed: user.serverSeed,
         hashedServerSeed: user.hashedServerSeed,
         nonce: user.nonce,
-        payoutMultiplier
-      }])
-      const {balance} = credResp[0];
-      if(credResp[0]?.error) throw new Error(credResp[0]?.description || "credit internal error")
+        payoutMultiplier,
+      },
+    ]);
+    const { balance } = credResp[0];
+    if (credResp[0]?.error)
+      throw new Error(credResp[0]?.description || "credit internal error");
 
     const info = {
       token: data.token,
@@ -120,6 +151,9 @@ export default class LimboService extends CommonService {
       nonce: user.nonce,
       active: false,
       betId,
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
       payout,
       payoutMultiplier,
       betStatus: BetStatus.creditSuccess,
@@ -130,20 +164,25 @@ export default class LimboService extends CommonService {
       date: new Date(),
     };
 
-    this.socket.emit(`${data.gameMode}/${SocketEvents.cashedout}`, {
-      userId: data.userId,
-      betId,
-      payout,
-      payoutMultiplier,
-      balance,
-      betAmount: data.betAmount,
-      currency: data.currency,
-      gameCode: GameCode.LIMBO,
-      date: info.date,
-    });
+    this.socket
+      .to(`${data.brandId}/${data.gameMode}`)
+      .emit(`${SocketEvents.cashedout}`, {
+        userId: data.userId,
+        betId,
+        payout,
+        payoutMultiplier,
+        balance,
+        betAmount: data.betAmount,
+        currency: data.currency,
+        gameCode: GameCode.LIMBO,
+        date: info.date,
+      });
 
     await this.gameModel.create(info);
-    await this.userModel.updateOne({_id: user._id}, {nonce: user.nonce + 1})
+    await this.userModel.updateOne(
+      { _id: user._id },
+      { $inc: { nonce: 1 } }
+    );
 
     this.logger.info("===limboBet ended===");
     return {
@@ -156,7 +195,7 @@ export default class LimboService extends CommonService {
       payoutMultiplier,
       gameCode: GameCode.LIMBO,
       date: info.date,
-      balance
+      balance,
     };
   }
 
@@ -168,7 +207,10 @@ export default class LimboService extends CommonService {
         // userId: data.userId,
         betId: data.betId,
         gameCode: GameCode.LIMBO,
-        gameMode: data.gameMode
+        gameMode: data.gameMode,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
       })
       .select({
         userId: 1,
@@ -183,23 +225,31 @@ export default class LimboService extends CommonService {
         serverSeed: 1,
         hashedServerSeed: 1,
         nonce: 1,
-        gameCode: 1
+        gameCode: 1,
       })
       .lean();
 
-      if(!resp?._id) {
-        throw new Error(i18next.t("general.invalidBetId"));
-      }
-   
-      const user = await this.userModel.findOne({userId: data.userId}).select({serverSeed: 1});
-   
-      this.logger.info("===getBetInfo ended===");
-      return {
-        ...resp,
-        limboState: {...resp.state},
-        winChance: (resp.state as LimboGameStateInterface).targetMultiplier/gameConfig[data.gameMode].rtp,
-        serverSeed:
-          resp.serverSeed === user.serverSeed ? null : resp.serverSeed,
-      };
+    if (!resp?._id) {
+      throw new Error(i18next.t("general.invalidBetId"));
+    }
+
+    const user = await this.userModel
+      .findOne({
+        userId: data.userId,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+      })
+      .select({ serverSeed: 1 });
+
+    this.logger.info("===getBetInfo ended===");
+    return {
+      ...resp,
+      limboState: { ...resp.state },
+      winChance:
+        (resp.state as LimboGameStateInterface).targetMultiplier /
+        gameConfig[data.gameMode].rtp,
+      serverSeed: resp.serverSeed === user.serverSeed ? null : resp.serverSeed,
+    };
   }
 }

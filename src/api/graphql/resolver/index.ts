@@ -44,6 +44,8 @@ const resolvers = {
           return "plinkoUserSession";
         case GameCode.CRASH:
           return "crashUserSession";
+        case GameCode.AVIATORX:
+          return "aviatorXUserSession";
         case GameCode.SLIDE:
           return "slideUserSession";
         default:
@@ -68,6 +70,8 @@ const resolvers = {
           return "plinkoBetSession";
         case GameCode.CRASH:
           return "crashBetResp";
+        case GameCode.AVIATORX:
+          return "aviatorXBetResp";
         case GameCode.SLIDE:
           return "slideBetResp";
         default:
@@ -84,6 +88,48 @@ const resolvers = {
           return "hiloPlaySession";
         case GameCode.CRASH:
           return "crashCashOutResp";
+        case GameCode.AVIATORX:
+          return "aviatorXCashOutResp";
+        default:
+          return "err";
+      }
+    },
+  },
+  refundResponse: {
+    __resolveType(obj, contextValue, info) {
+      switch (obj?.gameCode) {
+        case GameCode.AVIATORX:
+          return "aviatorXRefundResp";
+        default:
+          return "err";
+      }
+    },
+  },
+  updateUserProfileResponse: {
+    __resolveType(obj, contextValue, info) {
+      switch (obj?.gameCode) {
+        case GameCode.AVIATORX:
+          return "aviatorXUpdateAvtar";
+        default:
+          return "err";
+      }
+    },
+  },
+  winReportResponse: {
+    __resolveType(obj, contextValue, info) {
+      switch (obj?.gameCode) {
+        case GameCode.AVIATORX:
+          return "aviatorXWinReport";
+        default:
+          return "err";
+      }
+    },
+  },
+  previousSessionResponse: {
+    __resolveType(obj, contextValue, info) {
+      switch (obj?.gameCode) {
+        case GameCode.AVIATORX:
+          return "aviatorXPreviousRound";
         default:
           return "err";
       }
@@ -110,6 +156,18 @@ const resolvers = {
       }
     },
   },
+  crashInfoByIdResp: {
+    __resolveType(obj, contextValue, info) {
+      switch (obj?.gameCode) {
+        case GameCode.CRASH:
+          return "crashInfoResp";
+        case GameCode.AVIATORX:
+          return "aviatorXInfoResp";
+        default:
+          return "err";
+      }
+    },
+  },
   getBetInfo: {
     __resolveType(obj, contextValue, info) {
       switch (obj?.gameCode) {
@@ -127,6 +185,8 @@ const resolvers = {
           return "plinkoBetInfo";
         case GameCode.CRASH:
           return "crashBetInfo";
+        case GameCode.AVIATORX:
+          return "aviatorXBetInfo";
         case GameCode.SLIDE:
           return "slideBetInfo";
         default:

@@ -37,7 +37,10 @@ type hiloUserSession {
     gameCode: String!,
     paytable: [hiloPaytable],
     activeBet: hiloPlaySession,
-    gameMode: String
+    gameMode: String,
+    platformId: String,
+    operatorId: String,
+    brandId: String
 }
 
 type hiloPlaySession {

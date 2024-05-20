@@ -93,8 +93,8 @@ export default class CrashService extends CommonService {
           };
 
           info.crashState.cashOutAt <= _crashMultiplierByRTP &&
-            this.socket.emit(
-              `${_gameMode}/${SocketEvents.cashedout}`,
+            this.socket.to(`${info.brandId}/${info.gameMode}`).emit(
+              `${SocketEvents.cashedout}`,
               {...playerInfo, isRoundEnd: false}
             );
         } else if (
@@ -109,8 +109,8 @@ export default class CrashService extends CommonService {
             betStatus: BetStatus.creditSuccess,
           };
 
-          this.socket.emit(
-            `${_gameMode}/${SocketEvents.cashedout}`,
+          this.socket.to(`${info.brandId}/${info.gameMode}`).emit(
+            `${SocketEvents.cashedout}`,
             {...playerInfo, isRoundEnd: false}
           );
         } else {
@@ -159,8 +159,8 @@ export default class CrashService extends CommonService {
         let _gameMode = _gameModes[temp]
 
         game.crashMultiplier[_gameMode] < i
-          ? this.socket.to(GameCode.CRASH).emit(
-              `${GameCode.CRASH}/${_gameMode}/${MultiPlayerGameStates.halt}`,
+          ? this.socket.to(`${_gameMode}/${GameCode.CRASH}`).emit(
+              `${GameCode.CRASH}/${MultiPlayerGameStates.halt}`,
               {
                 gameId: game.id,
                 status: MultiPlayerGameStates.halt,
@@ -169,8 +169,8 @@ export default class CrashService extends CommonService {
                 delay: null,
               }
             )
-          : this.socket.to(GameCode.CRASH).emit(
-              `${GameCode.CRASH}/${_gameMode}/${MultiPlayerGameStates.running}`,
+          : this.socket.to(`${_gameMode}/${GameCode.CRASH}`).emit(
+              `${GameCode.CRASH}/${MultiPlayerGameStates.running}`,
               {
                 gameId: game.id,
                 status: game.status,
@@ -293,14 +293,14 @@ export default class CrashService extends CommonService {
         if (_resp?.error)
           throw new Error(_resp?.description || "credit internal error");
 
-        this.socket.to(GameCode.CRASH).emit(
-          `${_player.gameMode}/${_player.userId}/${SocketEvents.balance}`,
+        this.socket.to(_player.userId).emit(
+          `${_player.userId}/${SocketEvents.balance}`,
           { balance: _resp?.balance, userId: _player.userId }
         );
 
         if(_player.betStatus === BetStatus.debitSuccess) {
           //Need to trigger cashout for players who lost
-          this.socket.emit(`${_player.gameMode}/${SocketEvents.cashedout}`, {
+          this.socket.to(`${_player.brandId}/${_player.gameMode}`).emit(`${SocketEvents.cashedout}`, {
             gameCode: GameCode.CRASH,
             gameMode: _player.gameMode,
             date: _player.date,
@@ -341,6 +341,9 @@ export default class CrashService extends CommonService {
                 userId: curr.userId,
                 gameMode: curr.gameMode,
                 gameCode: GameCode.CRASH,
+                platformId: curr.platformId,
+                operatorId: curr.operatorId,
+                brandId: curr.brandId,
               },
               update: {
                 $set: {
@@ -361,24 +364,6 @@ export default class CrashService extends CommonService {
       },
       { status: MultiPlayerGameStates.ended }
     );
-
-    // if (history?.length > 0)
-    //   this.socket.to(GameCode.CRASH).emit(
-    //     `${GameCode.CRASH}/${SocketEvents.unsuccessFullCashout}`,
-    //     history?.map((el) => {
-    //       return {
-    //         gameCode: GameCode.CRASH,
-    //         gameMode: el.gameMode,
-    //         date: el.date,
-    //         currency: el.currency,
-    //         betAmount: el.betAmount || 0,
-    //         payoutMultiplier: el?.payoutMultiplier || 0,
-    //         payout: el?.payout || 0,
-    //         betId: el?.betId,
-    //         userId: el?.userId,
-    //       };
-    //     })
-    //   );
 
     this.endPerformanceLogging("CRASH: _handleGameCrash");
     this.logger.info("===CRASH: _handleGameCrash ended %s===");
@@ -407,8 +392,16 @@ export default class CrashService extends CommonService {
       this.cache.set(`${GameCode.CRASH}/seeds`, seedInfo);
     }
 
-    if (!hashInfo[0] && !hashInfo[0]?.hash)
+    if (!hashInfo[0] && !hashInfo[0]?.hash){
+      this.socket
+      .to(GameCode.CRASH)
+      .emit(`${GameCode.CRASH}/${MultiPlayerGameStates.underMaintenance}`, {
+        message: "Game under maintainence"
+      });
+
       throw new Error(i18next.t("crash.hashExhausted"));
+    }
+      
 
     const gameOutcomesInstance = Container.get(multiplayerOutcome);
     const result = await gameOutcomesInstance.generateGameOutcomes(
@@ -506,6 +499,9 @@ export default class CrashService extends CommonService {
       state: 1,
       betStatus: 1,
       date: 1,
+      platformId: 1,
+      operatorId: 1,
+      brandId: 1
     }).lean()
 
     for (const info of playerJoined) {
@@ -561,6 +557,9 @@ export default class CrashService extends CommonService {
 
     const isExistingUser = await this.userModel.exists({
       userId: playerInfo.playerId,
+      platformId: playerInfo?.platformId,
+      operatorId: playerInfo?.operatorId,
+      brandId: playerInfo?.brandId,
     });
 
     if (!isExistingUser) {
@@ -573,6 +572,10 @@ export default class CrashService extends CommonService {
         userId: playerInfo.playerId,
         token: data.token,
         clientSeed: playerInfo.playerId.slice(0, 10),
+        platformId: playerInfo?.platformId,
+        operatorId: playerInfo?.operatorId,
+        brandId: playerInfo?.brandId,
+        avtar: "av1",
       });
     }
     let currGame: { gameId: string; multiplier: number } = this.cache.get(
@@ -580,6 +583,7 @@ export default class CrashService extends CommonService {
     );
     let activeGameInfo: WSCrashGameInterface;
     let activeGame = {};
+    let gameUnderMaintenance = await this.crashHashModel.exists({isUsed: false});
 
     if (currGame?.gameId) {
       activeGameInfo = this.cache.get(`${GameCode.CRASH}/${currGame.gameId}`);
@@ -621,7 +625,7 @@ export default class CrashService extends CommonService {
     // await this.gameModel.deleteMany({gameCode: GameCode.CRASH})
 
     this.logger.info("===CRASH: getUserSession ended===");
-    return { ...playerInfo, gameCode: GameCode.CRASH, activeGame };
+    return { ...playerInfo, gameCode: GameCode.CRASH, activeGame, gameUnderMaintenance: !gameUnderMaintenance };
   }
 
   public async betPlace(data: CrashBetSessionInterface) {
@@ -637,7 +641,7 @@ export default class CrashService extends CommonService {
       throw new Error(i18next.t("crash.betNotAllowed"));
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({ userId: data.userId, brandId: data.brandId, platformId: data.platformId, operatorId: data.operatorId })
       .select({
         _id: 1,
         serverSeed: 1,
@@ -675,6 +679,9 @@ export default class CrashService extends CommonService {
       hashedServerSeed: user.hashedServerSeed,
       nonce: user.nonce,
       betId,
+      platformId: data.platformId,
+      brandId: data.brandId,
+      operatorId: data.operatorId,
       payout: 0,
       payoutMultiplier: 0,
       active: false,
@@ -705,15 +712,15 @@ export default class CrashService extends CommonService {
     };
 
     //Emit Soctket event for bet place as per by game Mode
-    this.socket.to(GameCode.CRASH).emit(
-      `${GameCode.CRASH}/${data.gameMode}/${SocketEvents.betPlaced}`,
+    this.socket.to(`${data.brandId}/${data.gameMode}/${GameCode.CRASH}`).emit(
+      `${GameCode.CRASH}/${SocketEvents.betPlaced}`,
       betResp
     );
 
     await this.gameModel.create(info);
     await this.userModel.updateOne(
       { _id: user._id },
-      { nonce: user.nonce + 1 }
+      { $inc: {nonce: 1} }
     );
 
     this.logger.info("===CRASH: betPlace ended===");
@@ -736,7 +743,7 @@ export default class CrashService extends CommonService {
 
     let _crashMultiplierByRTP = game.crashMultiplier[data.gameMode];
     let playerInfo = game.players[data.gameMode].find(
-      (el) => el.betId === data.betId
+      (el) => el.betId === data.betId && el.brandId === data.brandId
     );
 
     if (
@@ -763,11 +770,14 @@ export default class CrashService extends CommonService {
         }) 
       },
     });
-    this.socket.emit(`${data.gameMode}/${SocketEvents.cashedout}`, {...playerInfo, isRoundEnd: false});
+    this.socket.to(`${data.brandId}/${data.gameMode}`).emit(`${SocketEvents.cashedout}`, {...playerInfo, isRoundEnd: false});
 
     await this.gameModel.updateOne({
       gameId: data.gameId,
       betId: data.betId,
+      brandId: data.brandId,
+      platformId: data.platformId,
+      operatorId: data.operatorId,
       userId: data.userId,
       gameMode: data.gameMode,
       gameCode: GameCode.CRASH,
@@ -792,6 +802,9 @@ export default class CrashService extends CommonService {
         betId: data.betId,
         gameCode: GameCode.CRASH,
         gameMode: data.gameMode,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId
       })
       .select({
         userId: 1,
@@ -817,7 +830,12 @@ export default class CrashService extends CommonService {
     }
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({
+        userId: data.userId,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId,
+      })
       .select({ serverSeed: 1 });
 
     let gameInfo = await this.crashGames.aggregate([
@@ -906,6 +924,9 @@ export default class CrashService extends CommonService {
         gameId: data.gameId,
         gameCode: GameCode.CRASH,
         gameMode: data.gameMode,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId,
       })
       .select({
         userId: 1,

@@ -12,6 +12,9 @@ export interface DiamondBetSessionInterface {
   userId: string;
   currency: string;
   betAmount: number;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface UserDBGameSessionInterface {
@@ -30,6 +33,9 @@ export interface UserDBGameSessionInterface {
   payoutMultiplier: number;
   state: DiamondStateInterface;
   date: Date;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface InitSchemaInterface {
@@ -43,4 +49,7 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }

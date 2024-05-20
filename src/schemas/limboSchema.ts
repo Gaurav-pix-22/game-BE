@@ -11,6 +11,9 @@ const currency = Joi.string().trim().required();
 const userId = Joi.string().trim().required();
 const betAmount = Joi.number().required();
 const targetMultiplier = Joi.number().required();
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 
 const initSchema = Joi.object({
   token,
@@ -26,6 +29,9 @@ const limboBetSchema = Joi.object({
   currency,
   betAmount,
   targetMultiplier,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 

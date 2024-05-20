@@ -15,12 +15,20 @@ export interface UserInterface {
   hashedNextServerSeed: string;
   seedHistory: Record<string, seedHistory>;
   nonce: number;
+  avtar?: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface addOrUpdateUserInterface {
   userId: string;
   token: string;
   clientSeed: string;
+  platformId?: string;
+  operatorId?: string;
+  brandId?: string;
+  avtar?: string;
 }
 
 export interface getServerSeedInterface {

@@ -17,9 +17,10 @@ export const totalOutcomes = {
   PLINKO: 16,
 };
 
-// max raw outcomes (for multiplayer games like crash and slide)
+// max raw outcomes (for multiplayer games like crash, aviatorx and slide)
 export const maxRawOutcomes = {
   CRASH: 4294967296,
+  AVIATORX: 4294967296,
   SLIDE: 4294967296,
   LIMBO: 16777216,
 };
@@ -27,6 +28,7 @@ export const maxRawOutcomes = {
 // cut off for the game outcomes (for multiplayer games like crash and slide) (RTP)
 export const outComeCutoff = {
   CRASH: 0.99,
+  AVIATORX: 0.99,
   SLIDE: 0.98,
   LIMBO: 0.99,
 };

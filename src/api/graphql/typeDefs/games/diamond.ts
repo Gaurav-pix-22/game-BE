@@ -17,7 +17,10 @@ type diamondUserSession {
     language: String,
     paytable: [diamondPaytable],
     gameCode: String!,
-    gameMode: String
+    gameMode: String,
+    platformId: String,
+    operatorId: String,
+    brandId: String
 }
 
 type diamondBetSession {

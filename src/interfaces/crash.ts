@@ -22,7 +22,9 @@ export interface CrashBetSessionInterface {
   betAmount: number;
   cashOutAt: number;
   gameId: string;
-  // betNumber: number
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface CrashPlayerStatusInterface {
@@ -45,6 +47,9 @@ export interface CrashGameCashoutInterface {
   userId: string;
   gameCode: GameCode.CRASH;
   gameMode: GameMode;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface WSCrashPlayersInterface {
@@ -62,6 +67,9 @@ export interface WSCrashPlayersInterface {
   gameMode: GameMode;
   crashState: CrashPlayerStatusInterface;
   date: Date;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface WSCrashGameInterface {
@@ -89,6 +97,9 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface PreviousCrashInfo {
@@ -96,4 +107,7 @@ export interface PreviousCrashInfo {
   gameMode: GameMode;
   userId: string;
   gameId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }

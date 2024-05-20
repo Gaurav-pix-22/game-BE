@@ -18,6 +18,9 @@ export interface NextMineInterface {
   userId: string;
   variable: [number];
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface BetSessionInterface {
@@ -29,7 +32,10 @@ export interface BetSessionInterface {
   betAmount: number;
   mineCount: number;
   variable?: [number];
-  playMode: PlayMode
+  playMode: PlayMode;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface CashoutInterface {
@@ -37,7 +43,10 @@ export interface CashoutInterface {
   gameCode: GameCode.MINE;
   gameMode: GameMode;
   userId: string;
-  betId: string
+  betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface InitSchemaInterface {
@@ -51,4 +60,7 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }

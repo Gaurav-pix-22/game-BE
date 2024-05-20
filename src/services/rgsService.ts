@@ -1,6 +1,4 @@
-import { round } from './../interfaces/hilo';
 import i18next from "i18next";
-import crypto from "crypto";
 import axios from "axios";
 import { Inject, Service } from "typedi";
 import config from "../config";
@@ -21,47 +19,26 @@ export default class RgsService extends CommonService {
 
     if (!request.token) throw new Error(i18next.t("general.invalidToken"));
 
-    return {
-      playerId: "112233",
-      balance: 1000,
-      currency: "USD",
-      language: "en",
-      gameMode: "2",
+    const obj = {
+      token: request.token,
     };
 
-    const obj = { token: request.token };
-    const nonce = Date.now();
-    const hash = crypto
-      .createHash("md5")
-      .update(
-        `/rgs/game/validateToken${nonce}${JSON.stringify(obj)}${
-          config.secretKey
-        }`
-      )
-      .digest("hex");
-
-    const res = await axios({
+    let res = await axios({
       method: "post",
-      url: `${config.rgsUrl}/validateToken`,
+      url: `${config.rgsUrl}/demo/init`,
       data: obj,
-      headers: {
-        nonce,
-        hash,
-      },
     });
-
-    if (res?.data?.error) {
-      this.logger.info("===validateToken failed%s===");
-      throw new Error(res?.data?.description);
-    }
 
     this.logger.info("===validateToken call ended%s===");
     return {
-      playerId: res?.data?.player_id,
+      playerId: res?.data?.userId,
       balance: res?.data?.balance,
       currency: res?.data?.currency,
       language: res?.data?.language,
-      gameMode: res?.data?.game_mode || "2",
+      gameMode: res?.data?.gameMode || "2",
+      platformId: res?.data?.platformId || "",
+      operatorId: res?.data?.operatorId || "",
+      brandId:res?.data?.brandId || "",
     };
   }
 
@@ -77,38 +54,43 @@ export default class RgsService extends CommonService {
 
     let obj = {
       token: request.token,
-      amount: request.amount,
-      gameCode: request.gameCode,
-      transaction_id: request.betId,
+      betAmount: request.amount,
+      roundId: request.betId,
     };
 
-    //@ts-ignore
-    if(request?.roundId) obj = {...obj, round_id: request.roundId};
-
-    return {balance: 1000 - request.amount, transaction_id: request.betId}
-
-    const nonce = Date.now();
-    const hash = crypto
-      .createHash("md5")
-      .update(`/rgs/game/bet${nonce}${JSON.stringify(obj)}${config.secretKey}`)
-      .digest("hex");
-
-    const res = await axios({
+    let res = await axios({
       method: "post",
-      url: `${config.rgsUrl}/bet`,
+      url: `${config.rgsUrl}/demo/bet`,
       data: obj,
-      headers: {
-        nonce,
-        hash,
-      },
     });
 
-    if (res?.data?.error) {
-      this.logger.info("===rgs debit call failed%s===");
-      throw new Error(res?.data?.description);
-    }
-
     this.logger.info("===rgs debit call call ended%s===");
+
+    return res.data;
+  }
+
+  public async refund(request: DebitInterface) {
+    this.logger.info(
+      "===rgs refund call for player id %s and betId %s and refund amount is %s===",
+      request.playerId,
+      request.betId,
+      request.amount
+    );
+
+    if (!request.token) throw new Error(i18next.t("general.invalidToken"));
+
+    let obj = {
+      token: request.token,
+      roundId: request.betId,
+    };
+
+    let res = await axios({
+      method: "post",
+      url: `${config.rgsUrl}/demo/refund`,
+      data: obj
+    });
+
+    this.logger.info("===rgs refund call call ended%s===");
 
     return res.data;
   }
@@ -122,51 +104,50 @@ export default class RgsService extends CommonService {
     const obj = request.map((el) => {
       let _temp = {
         token: el.token,
-        amount: el.amount,
-        gameCode: el.gameCode,
-        transaction_id: el.betId,
+        winAmount: el.amount,
+        roundId: el.betId,
         clientSeed: el.clientSeed,
         serverSeed: el.serverSeed,
         hashedServerSeed: el.hashedServerSeed,
-        nonce: el?.nonce?.toString() || "",
-        payoutMultiplier: el.payoutMultiplier
+        payoutMultiplier: el.payoutMultiplier,
       };
 
       //@ts-ignore
-      if(el?.roundId) _temp = {..._temp, round_id: el?.roundId}
+      // if (el?.roundId) _temp = { ..._temp, roundId: el?.roundId };
 
       return _temp;
     });
 
-    return request.reduce((map, curr) => {
-      return [
-        ...map,
-        {balance: 1000, transaction_id: curr.betId}
-      ]
-    }, [])
+    // return request.reduce((map, curr) => {
+    //   return [...map, { balance: 1000, transaction_id: curr.betId }];
+    // }, []);
 
-    const nonce = Date.now();
-    const hash = crypto
-      .createHash("md5")
-      .update(
-        `/rgs/game/result${nonce}${JSON.stringify(obj)}${config.secretKey}`
-      )
-      .digest("hex");
+    if (!obj?.length) {
+      return [];
+    }
+
+    // const nonce = Date.now();
+    // const hash = crypto
+    //   .createHash("md5")
+    //   .update(
+    //     `/rgs/game/result${nonce}${JSON.stringify(obj)}${config.secretKey}`
+    //   )
+    //   .digest("hex");
 
     const res = await axios({
       method: "post",
-      url: `${config.rgsUrl}/result`,
+      url: `${config.rgsUrl}/demo/win`,
       data: obj,
-      headers: {
-        nonce,
-        hash,
-      },
+      // headers: {
+      //   nonce,
+      //   hash,
+      // },
     });
 
-    if (res?.data?.error) {
-      this.logger.info("===rgs credit call failed%s===");
-      throw new Error(res?.data?.description);
-    }
+    // if (res?.data?.error) {
+    //   this.logger.info("===rgs credit call failed%s===");
+    //   throw new Error(res?.data?.description);
+    // }
 
     this.logger.info("===rgs credit call call ended%s===");
 

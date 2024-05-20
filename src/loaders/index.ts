@@ -2,9 +2,8 @@ import expressLoader from "./express";
 import dependencyInjectorLoader from "./dependencyInjector";
 import mongooseLoader from "./mongoose";
 import Logger from "./logger";
-import { crashInit, slideInit } from "./mulyiplayerGameInit";
+import { crashInit, slideInit, aviatorXInit } from "./mulyiplayerGameInit";
 import SocketServer from "./socket";
-import rgsSocketInit from "./rgsSocketListener";
 import cacheInit from "./cache";
 //We have to import at least all the events once so they can be triggered
 import "./events";
@@ -38,6 +37,16 @@ export default async ({ expressApp, httpServer }) => {
     model: require("../models/crashGameModel").default,
   };
 
+  const aviatorXServerModel = {
+    name: "aviatorXServerModel",
+    model: require("../models/aviatorXServerModel").default,
+  };
+
+  const aviatorXGameModel = {
+    name: "aviatorXGameModel",
+    model: require("../models/aviatorXGameModel").default,
+  };
+
   const slideHashModel = {
     name: "slideHashModel",
     model: require("../models/slideHashModel").default,
@@ -59,8 +68,10 @@ export default async ({ expressApp, httpServer }) => {
       gameModel,
       crashHashModel,
       crashGameModel,
+      aviatorXServerModel,
+      aviatorXGameModel,
       slideHashModel,
-      slideGameModel
+      slideGameModel,
     ],
     io,
     myCache,
@@ -68,9 +79,9 @@ export default async ({ expressApp, httpServer }) => {
 
   Logger.info("✌️ Dependency Injector loaded");
 
-  crashInit();
-  slideInit();
+  // crashInit();
+  // slideInit();
+  // aviatorXInit()
   await expressLoader({ app: expressApp });
   Logger.info("✌️ Express loaded");
-  await rgsSocketInit(io, Logger);
 };

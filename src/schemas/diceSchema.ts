@@ -1,5 +1,10 @@
 import { Joi } from "celebrate";
-import { DiceGameConditions, GameCode, OrderBy, GameMode } from "../config/constant";
+import {
+  DiceGameConditions,
+  GameCode,
+  OrderBy,
+  GameMode,
+} from "../config/constant";
 
 const token = Joi.string().trim().required();
 const gameCode = Joi.string().trim().required().valid(GameCode.DICE);
@@ -15,6 +20,9 @@ const condition = Joi.string()
   .trim()
   .required()
   .valid(...Object.values(DiceGameConditions));
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 
 const initSchema = Joi.object({
   token,
@@ -31,10 +39,9 @@ const diceRollInterface = Joi.object({
   betAmount,
   target,
   condition,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
-
-export {
-  initSchema,
-  diceRollInterface,
-};
+export { initSchema, diceRollInterface };

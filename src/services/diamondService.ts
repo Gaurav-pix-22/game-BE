@@ -1,4 +1,4 @@
-import { GameCode, SocketEvents,BetStatus } from "../config/constant";
+import { GameCode, SocketEvents, BetStatus } from "../config/constant";
 import moment from "moment";
 import { Server } from "socket.io";
 import Container from "typedi";
@@ -40,6 +40,9 @@ export default class DaimondService extends CommonService {
 
     const isExistingUser = await this.userModel.exists({
       userId: playerInfo.playerId,
+      platformId: playerInfo?.platformId,
+      operatorId: playerInfo?.operatorId,
+      brandId: playerInfo?.brandId,
     });
 
     if (!isExistingUser) {
@@ -52,6 +55,10 @@ export default class DaimondService extends CommonService {
         userId: playerInfo.playerId,
         token: data.token,
         clientSeed: playerInfo.playerId.slice(0, 10),
+        platformId: playerInfo?.platformId,
+        operatorId: playerInfo?.operatorId,
+        brandId: playerInfo?.brandId,
+        avtar: "av1",
       });
     }
 
@@ -70,7 +77,12 @@ export default class DaimondService extends CommonService {
     const rgsServiceInstance = Container.get(rgsService);
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({
+        userId: data.userId,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
+      })
       .select({
         _id: 1,
         serverSeed: 1,
@@ -132,23 +144,26 @@ export default class DaimondService extends CommonService {
       playerId: data.userId,
       amount: data.betAmount,
       betId,
-      gameCode: GameCode.DIAMOND
-    })
-
-    const credResp = await rgsServiceInstance.credit([{
-      token: data.token,
-      playerId: data.userId,
-      amount: payout,
-      betId,
       gameCode: GameCode.DIAMOND,
-      clientSeed: user.clientSeed,
-      serverSeed: user.serverSeed,
-      hashedServerSeed: user.hashedServerSeed,
-      nonce: user.nonce,
-      payoutMultiplier
-    }])
-    const {balance} = credResp[0];
-    if(credResp[0]?.error) throw new Error(credResp[0]?.description || "credit internal error")
+    });
+
+    const credResp = await rgsServiceInstance.credit([
+      {
+        token: data.token,
+        playerId: data.userId,
+        amount: payout,
+        betId,
+        gameCode: GameCode.DIAMOND,
+        clientSeed: user.clientSeed,
+        serverSeed: user.serverSeed,
+        hashedServerSeed: user.hashedServerSeed,
+        nonce: user.nonce,
+        payoutMultiplier,
+      },
+    ]);
+    const { balance } = credResp[0];
+    if (credResp[0]?.error)
+      throw new Error(credResp[0]?.description || "credit internal error");
 
     const info = {
       token: data.token,
@@ -162,6 +177,9 @@ export default class DaimondService extends CommonService {
       hashedServerSeed: user.hashedServerSeed,
       nonce: user.nonce,
       betId,
+      platformId: data?.platformId,
+      operatorId: data?.operatorId,
+      brandId: data?.brandId,
       payout,
       payoutMultiplier,
       active: false,
@@ -172,23 +190,22 @@ export default class DaimondService extends CommonService {
       date: new Date(),
     };
 
-    this.socket.emit(`${data.gameMode}/${SocketEvents.cashedout}`, {
-      userId: data.userId,
-      betId,
-      payout,
-      payoutMultiplier,
-      balance,
-      betAmount: data.betAmount,
-      currency: data.currency,
-      gameCode: GameCode.DIAMOND,
-      date: info.date,
-    });
+    this.socket
+      .to(`${data.brandId}/${data.gameMode}`)
+      .emit(`${SocketEvents.cashedout}`, {
+        userId: data.userId,
+        betId,
+        payout,
+        payoutMultiplier,
+        balance,
+        betAmount: data.betAmount,
+        currency: data.currency,
+        gameCode: GameCode.DIAMOND,
+        date: info.date,
+      });
 
     await this.gameModel.create(info);
-    await this.userModel.updateOne(
-      { _id: user._id },
-      { nonce: user.nonce + 1 }
-    );
+    await this.userModel.updateOne({ _id: user._id }, { $inc: { nonce: 1 } });
 
     this.logger.info("===diamondBet ended===");
     return {
@@ -200,7 +217,7 @@ export default class DaimondService extends CommonService {
       payoutMultiplier,
       gameCode: GameCode.DIAMOND,
       date: info.date,
-      balance
+      balance,
     };
   }
 
@@ -212,7 +229,10 @@ export default class DaimondService extends CommonService {
         // userId: data.userId,
         betId: data.betId,
         gameCode: GameCode.DIAMOND,
-        gameMode: data.gameMode
+        gameMode: data.gameMode,
+        platformId: data?.platformId,
+        operatorId: data?.operatorId,
+        brandId: data?.brandId,
       })
       .select({
         userId: 1,
@@ -231,18 +251,23 @@ export default class DaimondService extends CommonService {
       })
       .lean();
 
-    if(!resp?._id) {
+    if (!resp?._id) {
       throw new Error(i18next.t("general.invalidBetId"));
     }
 
     const user = await this.userModel
-      .findOne({ userId: data.userId })
+      .findOne({
+        userId: data.userId,
+        brandId: data.brandId,
+        operatorId: data.operatorId,
+        platformId: data.platformId,
+      })
       .select({ serverSeed: 1 });
 
     this.logger.info("===getBetInfo ended===");
     return {
       ...resp,
-      diamondState: {...resp.state},
+      diamondState: { ...resp.state },
       serverSeed: resp.serverSeed === user.serverSeed ? null : resp.serverSeed,
     };
   }

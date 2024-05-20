@@ -1,6 +1,9 @@
 import { Joi } from "celebrate";
 import { GameCode, GameMode } from "../config/constant";
 
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 const token = Joi.string().trim().required();
 const gameCode = Joi.string().trim().required().valid(GameCode.SLIDE);
 const gameMode = Joi.string()
@@ -28,14 +31,20 @@ const betSessionSchema = Joi.object({
   currency,
   betAmount,
   gameId,
-  targetMultiplier
+  targetMultiplier,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const prevSlideInfo = Joi.object({
   gameCode,
   gameMode,
   userId,
-  gameId
+  gameId,
+  platformId,
+  operatorId,
+  brandId
 })
 
 export { initSchema, betSessionSchema, prevSlideInfo };

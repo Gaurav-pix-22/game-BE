@@ -30,7 +30,11 @@ export interface UserDBGameSessionInterface {
   gameId?: string;
   betStatus?: BetStatus;
   err?: string;
+  avtar?: string;
   date: Date;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface GameStates {
@@ -42,28 +46,47 @@ export interface GameStates {
   [GameCode.HILO]: HiloStateInterface;
   [GameCode.MINE]: MinegameState;
   [GameCode.PLINKO]: PlinkoStateInterface;
+  [GameCode.AVIATORX]: any;
 }
 
 export interface AllBetsInterface extends PaginationInterface {
   token: string;
   gameMode: GameMode;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface PlayerBetsInterface extends PaginationInterface {
   userId: string;
   gameMode: GameMode;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
+  gameCode?: GameCode;
   token: string;
 }
 
 export interface PrevGameInfo extends PaginationInterface {
   gameMode: GameMode;
   gameCode: GameCode;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
   token: string;
 }
 
 export interface HashcodeInterface {
   _id?: string;
   hash: string;
+  isUsed: boolean;
+  order: number;
+}
+
+export interface ServerCodeInterface {
+  _id?: string;
+  serverSeed: string;
+  hashedServerSeed: string;
   isUsed: boolean;
   order: number;
 }

@@ -13,6 +13,9 @@ const betId = Joi.string().trim().required();
 const gameId = Joi.string().trim().required();
 const betAmount = Joi.number().required();
 const cashOutAt = Joi.number().required();
+const platformId = Joi.string().trim().required();
+const operatorId = Joi.string().trim().required();
+const brandId = Joi.string().trim().required();
 // const betNumber = Joi.number().required();
 
 
@@ -29,6 +32,9 @@ const cashoutSchema = Joi.object({
   gameId,
   userId,
   betId,
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const betSessionSchema = Joi.object({
@@ -40,14 +46,19 @@ const betSessionSchema = Joi.object({
   betAmount,
   gameId,
   cashOutAt,
-  // betNumber
+  platformId,
+  operatorId,
+  brandId
 }).unknown();
 
 const prevCrashInfo = Joi.object({
   gameCode,
   gameMode,
   userId,
-  gameId
+  gameId,
+  platformId,
+  operatorId,
+  brandId
 })
 
 export { initSchema, betSessionSchema,  cashoutSchema, prevCrashInfo };

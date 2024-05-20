@@ -9,6 +9,9 @@ export interface DiceRollSessionInterface {
   betAmount: number;
   target: number;
   condition: DiceGameConditions;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface DiceStateInterface {
@@ -22,6 +25,9 @@ export interface BetInfo {
   gameMode: GameMode;
   userId: string;
   betId: string;
+  platformId: string;
+  operatorId: string;
+  brandId: string;
 }
 
 export interface InitSchemaInterface {

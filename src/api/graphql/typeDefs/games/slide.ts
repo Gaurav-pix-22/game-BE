@@ -32,7 +32,10 @@ type slideUserSession {
     language: String,
     activeGame: slideActiveGameSession,
     gameCode: String!,
-    gameMode: String
+    gameMode: String,
+    platformId: String,
+    operatorId: String,
+    brandId: String
 }
 
 type slideGameState {
