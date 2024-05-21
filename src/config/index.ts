@@ -31,6 +31,7 @@ export default {
   metaData: process.env.META_DATA,
   base: process.env.BASE,
   allowedTimeInSec: Number(process.env.ALLOWED_TIME_IN_SEC) || 5,
+  apolloKey: process.env.APOLLO_KEY,
 
 
 
