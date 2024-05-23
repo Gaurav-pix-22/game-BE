@@ -69,6 +69,11 @@ export default class GameService extends CommonService {
         //@ts-ignore
         $lte: new Date(endOfMonth),
       },
+      gameMode: data.gameMode,
+      platformId: data.platformId,
+      operatorId: data.operatorId,
+      brandId: data.brandId,
+      betStatus: { $nin: [BetStatus.debitSuccess] },
     });
 
     this.logger.info("===getAllBets ended===");
@@ -130,6 +135,11 @@ export default class GameService extends CommonService {
         //@ts-ignore
         $lte: new Date(endOfMonth),
       },
+      gameMode: data.gameMode,
+      platformId: data.platformId,
+      operatorId: data.operatorId,
+      brandId: data.brandId,
+      betStatus: { $nin: [BetStatus.debitSuccess] },
     });
 
     const user = await this.userModel
@@ -175,9 +185,6 @@ export default class GameService extends CommonService {
               $lte: new Date(endOfDay),
             },
             status: MultiPlayerGameStates.ended,
-            platformId: data.platformId,
-            operatorId: data.operatorId,
-            brandId: data.brandId,
           })
           .select({
             _id: 1,
@@ -228,9 +235,6 @@ export default class GameService extends CommonService {
               $lte: new Date(endOfDay),
             },
             status: MultiPlayerGameStates.ended,
-            platformId: data.platformId,
-            operatorId: data.operatorId,
-            brandId: data.brandId,
           })
           .select({
             _id: 1,
