@@ -3,7 +3,7 @@
  */
 import { Inject, Service } from "typedi";
 import crypto from "crypto";
-import { houseEdgeConversion, maxRawOutcomes, houseEdges } from "./constants";
+import { maxMultiplierCap, houseEdges } from "./constants";
 import _, { round } from "lodash";
 
 @Service()
@@ -54,7 +54,7 @@ export default class GenerateSeed {
         temp = Number((100 * e - decimalValue) / (e - decimalValue) / 100);
       }
 
-      outcomes[houseEdges[i]] = temp;
+      outcomes[houseEdges[i]] = maxMultiplierCap["AVIATORX"] > 0 && maxMultiplierCap["AVIATORX"]<temp ? maxMultiplierCap["AVIATORX"] : temp;   
     }
 
     return {outcomes, hash};

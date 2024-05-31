@@ -655,6 +655,14 @@ export default class CrashService extends CommonService {
       throw new Error(i18next.t("general.invalidUserSeed"));
     }
 
+    const betCount = await this.gameModel.count({
+      userId: user._id,
+      gameId: new mongoose.Types.ObjectId(data.gameId),
+      gameCode: GameCode.CRASH
+    });
+
+    if(betCount > 2) throw new Error(i18next.t("crash.maxBetExceed"));
+
     // const betId = game?.round?.toString() ? `${game?.round?.toString()}-${data.token}-${data.betNumber}` : uuidv4();
     const betId = uuidv4();
 

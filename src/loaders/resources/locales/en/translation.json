@@ -37,6 +37,7 @@
     "invalidCashout": "Cashout not allowed",
     "betAlreadySettled": "Bet already settled",
     "gameEnded":"Game session has ended",
-    "invalidBetId": "Please provide valid bet id"
+    "invalidBetId": "Please provide valid bet id",
+    "maxBetExceed": "Max 2 bets allowed per round"
   }
 }

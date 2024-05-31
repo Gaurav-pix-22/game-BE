@@ -3,7 +3,7 @@
  */
 import { Inject, Service } from "typedi";
 import crypto from "crypto";
-import { houseEdgeConversion, maxRawOutcomes, houseEdges } from "./constants";
+import { houseEdgeConversion, maxRawOutcomes, houseEdges, maxMultiplierCap } from "./constants";
 import _ from "lodash";
 
 @Service()
@@ -63,9 +63,10 @@ export default class provablyFair {
     const maxRawOutcome = maxRawOutcomes[game];
     const outcomes = {};
     for (let i = 0; i < houseEdges.length; i++) {
-      outcomes[houseEdges[i]] =
-        (maxRawOutcome / (rawOutcome + 1)) *
-        (1 - houseEdgeConversion[houseEdges[i]]);
+      let _temp = (maxRawOutcome / (rawOutcome + 1)) *
+      (1 - houseEdgeConversion[houseEdges[i]]);
+
+      outcomes[houseEdges[i]] = maxMultiplierCap[game] > 0 && maxMultiplierCap[game]<_temp ? maxMultiplierCap[game] : _temp;   
     }
     // const outcome =
     //   (maxRawOutcome / (rawOutcome + 1)) * (1 - houseEdgeConversion[houseEdge]);

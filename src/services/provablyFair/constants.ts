@@ -25,6 +25,12 @@ export const maxRawOutcomes = {
   LIMBO: 16777216,
 };
 
+export const maxMultiplierCap = {
+  CRASH: 250,
+  AVIATORX: 250,
+  SLIDE: 250,
+}
+
 // cut off for the game outcomes (for multiplayer games like crash and slide) (RTP)
 export const outComeCutoff = {
   CRASH: 0.99,
